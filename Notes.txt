@@ -1,0 +1,14 @@
+Notes on Submodules. Will soon become documentation...
+
+
+## To clone the repo, and pull all the submodules at once:
+git clone --recurse-submodules <URL to git repo>
+
+## To pull code down for submodules:
+	(If you forget the above clone command, you can do a normal
+	 clone, then this too).
+git submodule update --init --recursive --remote
+	--init = If there's no folder, create one.
+	--recursive = If the submodule has a submodule, do that too.
+	--remote = If the submodule has been updated, pull it.
+	
