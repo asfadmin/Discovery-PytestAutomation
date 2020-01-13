@@ -5,7 +5,7 @@ import sys, os, pytest
 project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.insert(1, project_root)
 
-main_config = helpers.loadConfigFromDirectory(os.path.join(project_root, "yml_tests"))
+main_config = helpers.getConfig()
 all_tests = helpers.loadTestsFromDirectory(project_root, recurse=True)
 
 # For each item in the list, run it though the suite:
@@ -25,4 +25,6 @@ def test_main(test, cli_args):
 			# Run the test:
 			conf["method"](test_info, file_conf)
 			break
+	# If you never matched to a function, error out.
 	assert found_test, "Cannot determine test type. Test: {0}. File: {1}.".format(test_info["title"], file_conf["yml name"])
+
