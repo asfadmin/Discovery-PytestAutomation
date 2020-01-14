@@ -1,10 +1,8 @@
 import conftest as helpers
 import sys, os, pytest
 
-# Lets you import files in the directory behind this one:
-project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-sys.path.insert(1, project_root)
 
+project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 main_config = helpers.getConfig()
 all_tests = helpers.loadTestsFromDirectory(project_root, recurse=True)
 
