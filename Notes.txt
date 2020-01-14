@@ -1,7 +1,7 @@
 Notes on Submodules. Will soon become documentation...
 
 ## To add a repo to a project:
-git submodule add <URL to git repo>
+git submodule add [-b branch_name] <URL to git repo>
 
 ## To clone the repo, and pull all the submodules at once:
 git clone --recurse-submodules <URL to git repo>
