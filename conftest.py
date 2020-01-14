@@ -6,8 +6,8 @@ import importlib            # For returning modules back to the main script
 from copy import deepcopy   # To copy dicts w/out modifying original
 
 # GLOBALS:
-import_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yml_tests", "pytest_managers.py") # MUST end in .py
-config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yml_tests", "pytest_config.yml")
+import_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_managers.py")) # MUST end in .py
+config_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_config.yml"))
 config_loaded = None # Gets set to return value of 'import_config' right after that function def
 
 
@@ -59,17 +59,19 @@ def import_config():
     global config_path
     global import_path
     master_config = openYmlFile(config_path)
-    import_name = os.path.basename(import_path)
-    module_name = "yml_tests." + import_name.split(".")[0]
+    import_name = os.path.basename(import_path)[:-3] # [:-3] to take off the '.py'
 
     # openymlfile will print details on what goes wrong too:
     assert master_config != None, "Problem with yml config. Path: '{0}'.".format(config_path)
     assert "test_types" in master_config, "Required key 'test_types' not found in {0}.".format(import_name)
     # Import the 'import_name' package:
     try:
-        import_main = importlib.import_module(module_name)
-    except ImportError:
-        assert False, "Problem importing file '{0}'. Tried to import: '{1}'.".format(import_name, module_name)
+        # Lets you import files from the 'import' dir:
+        sys.path.append(os.path.dirname(import_path))
+        import_main = importlib.import_module(import_name)
+        sys.path.remove(os.path.dirname(import_path))
+    except ImportError as e:
+        assert False, "Problem importing file '{0}'. Tried to import: '{1}'.\nError: {2}".format(import_name, import_path, str(e))
 
     ## LOAD TEST_TYPES BLOCK ##
     # (These are required. No need to check for key-errors)
@@ -88,7 +90,7 @@ def import_config():
             # From here, you should be able to call tmp_config["method"](test_info) to run a test
             tmp_config["method"] = getattr(import_main, tmp_config["method"])
         except AttributeError:
-            assert False, "'{0}' not found in '{1}'.".format(tmp_config["method"], module_name)
+            assert False, "'{0}' not found in '{1}'.".format(tmp_config["method"], import_name)
         # Save it:
         master_config["test_types"][i] = tmp_config
 
@@ -100,13 +102,13 @@ def import_config():
                 # override the before-hook with it's function:
                 master_config["test_hooks"]["before_suites"] = getattr(import_main, master_config["test_hooks"]["before_suites"])
             except AttributeError:
-                assert False, "'{0}' not found in '{1}'.".format(master_config["test_hooks"]["before_suites"], module_name)
+                assert False, "'{0}' not found in '{1}'.".format(master_config["test_hooks"]["before_suites"], import_name)
         if "after_suites" in master_config["test_hooks"]:
             try:
                 # override the before-hook with it's function:
                 master_config["test_hooks"]["after_suites"] = getattr(import_main, master_config["test_hooks"]["after_suites"])
             except AttributeError:
-                assert False, "'{0}' not found in '{1}'.".format(master_config["test_hooks"]["after_suites"], module_name)
+                assert False, "'{0}' not found in '{1}'.".format(master_config["test_hooks"]["after_suites"], import_name)
     else:
         master_config["test_hooks"] = None
     return master_config
