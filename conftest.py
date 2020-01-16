@@ -20,6 +20,7 @@ config_loaded = None # Gets set to return value of 'import_config' right after t
 #    Opens it and returns a list of tests, or None if none are found.
 #    format: {"tests": [list,of,tests,here] }
 def openYmlFile(path):
+    path = os.path.abspath(path)
     if not os.path.exists(path):
         print("\n###########")
         print("File not Found: '{0}'.".format(path))
@@ -33,6 +34,10 @@ def openYmlFile(path):
             print("Failed to parse yaml: '{0}'.".format(path))
             print("###########\n")
             return None
+    if yaml_dict == None:
+        print("\n###########")
+        print("Yaml file is empty: '{0}'.".format(path))
+        print("###########\n")
     return yaml_dict
 
 ## Move title into Test:
@@ -88,7 +93,7 @@ def import_config():
         try:
             # Saves the function to the 'method' key.
             # From here, you should be able to call tmp_config["method"](test_info) to run a test
-            tmp_config["method"] = getattr(import_main, tmp_config["method"])
+            tmp_config["method_pointer"] = getattr(import_main, tmp_config["method"])
         except AttributeError:
             assert False, "'{0}' not found in '{1}'.".format(tmp_config["method"], import_name)
         # Save it:
@@ -110,7 +115,7 @@ def import_config():
             except AttributeError:
                 assert False, "'{0}' not found in '{1}'.".format(master_config["test_hooks"]["after_suites"], import_name)
     else:
-        master_config["test_hooks"] = None
+        master_config["test_hooks"] = {}
     return master_config
 config_loaded = import_config()
 
@@ -187,8 +192,31 @@ def pytest_addoption(parser):
 ## Returns the custom CLI options to a test when used in a param:
 @pytest.fixture
 def cli_args(request):
+    global config_loaded
+
+    def lookup_api(poss_key):
+        if poss_key in config_loaded["api_urls"]:
+            # Change poss_key from api_urls key, to value:
+            poss_key = config_loaded["api_urls"][poss_key]
+        # else: assume the 'poss_key' passed IS the url itself. No need to error out
+        if poss_key[-1:] != '/':
+            poss_key += '/'
+        return poss_key
+
     all_args = {}
-    all_args['api'] = request.config.getoption('--api')
+    # Api holds the start of the url. Each test adds their endpoint.
+    # If '--api' was used in the commandline:
+    if request.config.getoption('--api') != None:
+        if "api_urls" not in config_loaded:
+            assert False, "Error: '--api' used, but 'api_urls' NOT defined in pytest_config.yml."
+        all_args["api"] = lookup_api(request.config.getoption('--api'))
+    # Elif try to load the 'default' api from config:
+    elif "api_urls" in config_loaded and "default" in config_loaded["api_urls"]:
+        all_args["api"] = lookup_api(config_loaded["api_urls"]["default"])
+    # Else you're done:
+    else:
+        all_args['api'] = None
+
     all_args['only run'] = request.config.getoption('--only-run')
     all_args['dont run'] = request.config.getoption('--dont-run')
     all_args['only run file'] = request.config.getoption('--only-run-file')
