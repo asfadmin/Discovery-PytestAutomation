@@ -23,7 +23,7 @@ def test_main(test, cli_args):
 			# Run the test:
 			# (NOT catching TypeError because if something *in* that test throws it, this would still catch...)
 			# try:
-			conf["method_pointer"](test_info, file_conf, cli_args)
+			conf["method_pointer"](test_info, file_conf, cli_args, conf["variables"])
 			# except TypeError:
 				# assert False, "Method '{0}' needs to accept three parameters. (test_info, file_config, cli_args).".format(conf["method"])
 			break

@@ -96,6 +96,9 @@ def import_config():
             tmp_config["method_pointer"] = getattr(import_main, tmp_config["method"])
         except AttributeError:
             assert False, "'{0}' not found in '{1}'.".format(tmp_config["method"], import_name)
+        # Just guarantee it's there, for passing onto each test:
+        if "variables" not in tmp_config:
+            tmp_config["variables"] = None
         # Save it:
         master_config["test_types"][i] = tmp_config
 
