@@ -6,9 +6,24 @@ import importlib            # For returning modules back to the main script
 from copy import deepcopy   # To copy dicts w/out modifying original
 
 # GLOBALS:
-import_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_managers.py")) # MUST end in .py
-config_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_config.yml"))
-config_loaded = None # Gets set to return value of 'import_config' right after that function def
+# import_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_managers.py")) # MUST end in .py
+# config_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_config.yml"))
+import_path = "pytest_managers.py"
+config_path = "pytest_config.yml"
+loaded_config = None # Gets set to contents of config_path, in 'import_config'
+
+
+
+# Looks recursivly starting one dir behind this file, for any files named 'name'.
+# If exactly *one* found, return it. Else exit the program and warn tester.
+def get_path_from_name(name):
+    recursive_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "**", name))
+    possible_paths = glob.glob(recursive_path, recursive=True)
+    if len(possible_paths) != 1:
+        assert False, "Must have exactly one file named {0} inside project. Found {1} instead.\nPath used to find files: {2}.".format(name, len(possible_paths), recursive_path)
+    return possible_paths[0]
+import_path = get_path_from_name(import_path)
+config_path = get_path_from_name(config_path)
 
 
 
@@ -120,12 +135,12 @@ def import_config():
     else:
         master_config["test_hooks"] = {}
     return master_config
-config_loaded = import_config()
+loaded_config = import_config()
 
 ## Imports the functions defined in the config, and returns them w/ everything in a dict. 
 def getConfig():
-    global config_loaded
-    return config_loaded
+    global loaded_config
+    return loaded_config
 
 ## Load all yml's in repo, and return a list of formated tests:
 def loadTestsFromDirectory(dir_path_root, recurse=False):
@@ -160,21 +175,21 @@ def loadTestsFromDirectory(dir_path_root, recurse=False):
 # HOOK FUNCTIONS #
 ##################
 def pytest_sessionstart(session):
-    global config_loaded
+    global loaded_config
     # If they declared a before-hook, run it:
-    if "before_suites" in config_loaded["test_hooks"]:
-        config_loaded["test_hooks"]["before_suites"]()
+    if "before_suites" in loaded_config["test_hooks"]:
+        loaded_config["test_hooks"]["before_suites"]()
 
 def pytest_sessionfinish(session, exitstatus):
-    global config_loaded
+    global loaded_config
     # If they declared a after-hook:
-    if "after_suites" in config_loaded["test_hooks"]:
+    if "after_suites" in loaded_config["test_hooks"]:
         # Try first with passing the exitstatus, then w/out:
         try:
             print("Exit Code: " + str(exitstatus))
-            config_loaded["test_hooks"]["after_suites"](exitstatus)
+            loaded_config["test_hooks"]["after_suites"](exitstatus)
         except Exception as e:
-            config_loaded["test_hooks"]["after_suites"]()
+            loaded_config["test_hooks"]["after_suites"]()
 
 #############
 # CLI STUFF #
@@ -195,12 +210,12 @@ def pytest_addoption(parser):
 ## Returns the custom CLI options to a test when used in a param:
 @pytest.fixture
 def cli_args(request):
-    global config_loaded
+    global loaded_config
 
     def lookup_api(poss_key):
-        if poss_key in config_loaded["api_urls"]:
+        if poss_key in loaded_config["api_urls"]:
             # Change poss_key from api_urls key, to value:
-            poss_key = config_loaded["api_urls"][poss_key]
+            poss_key = loaded_config["api_urls"][poss_key]
         # else: assume the 'poss_key' passed IS the url itself. No need to error out
         if poss_key[-1:] != '/':
             poss_key += '/'
@@ -210,12 +225,12 @@ def cli_args(request):
     # Api holds the start of the url. Each test adds their endpoint.
     # If '--api' was used in the commandline:
     if request.config.getoption('--api') != None:
-        if "api_urls" not in config_loaded:
+        if "api_urls" not in loaded_config:
             assert False, "Error: '--api' used, but 'api_urls' NOT defined in pytest_config.yml."
         all_args["api"] = lookup_api(request.config.getoption('--api'))
     # Elif try to load the 'default' api from config:
-    elif "api_urls" in config_loaded and "default" in config_loaded["api_urls"]:
-        all_args["api"] = lookup_api(config_loaded["api_urls"]["default"])
+    elif "api_urls" in loaded_config and "default" in loaded_config["api_urls"]:
+        all_args["api"] = lookup_api(loaded_config["api_urls"]["default"])
     # Else you're done:
     else:
         all_args['api'] = None
