@@ -78,12 +78,15 @@ def moveTitleIntoBlock(json_test, file_name):
 def import_config():
     global config_path
     global import_path
+
+    # openymlfile will print details on what goes wrong:
     master_config = openYmlFile(config_path)
     import_name = os.path.basename(import_path)[:-3] # [:-3] to take off the '.py'
 
-    # openymlfile will print details on what goes wrong too:
+    #  Quick sanity checks:
     assert master_config != None, "Problem with yml config. Path: '{0}'.".format(config_path)
     assert "test_types" in master_config, "Required key 'test_types' not found in {0}.".format(import_name)
+    assert isinstance(master_config["test_types"], type([])), "Problem in {0}: 'test_types' must be a list. (Currently type: {1}).".format(os.path.basename(import_path), type(master_config["test_types"]))
     # Import the 'import_name' package:
     try:
         # Lets you import files from the 'import' dir:
@@ -101,6 +104,8 @@ def import_config():
         # Make sure the config block parsed correctly, and contains the required keys:
         assert tmp_config != None, "Error parsing config. Block: '{0}'.".format(test_config)
         assert "required_keys" in tmp_config and "method" in tmp_config, "Required keys not found. (Keys: required_keys, method). \nBlock: '{0}'.".format(test_config)
+
+
         # If required_keys contains only one item, make it a list of one item:
         if not isinstance(tmp_config["required_keys"], type([])):
             tmp_config["required_keys"] = [tmp_config["required_keys"]]
@@ -153,7 +158,7 @@ def loadTestsFromDirectory(dir_path_root, recurse=False):
             continue
         if not ("tests" in yaml_dict and isinstance(yaml_dict["tests"], type([]))):
             print("\n###########")
-            print("No tests found in Yaml: '{0}'. File needs 'tests' or 'url tests' key, with a list as the value.".format(file))
+            print("No tests found in Yaml: '{0}'. File needs 'tests' key, with a list as the value.".format(file))
             print("###########\n")
             continue
 
@@ -185,6 +190,7 @@ def pytest_sessionfinish(session, exitstatus):
     # If they declared a after-hook:
     if "after_suites" in loaded_config["test_hooks"]:
         # Try first with passing the exitstatus, then w/out:
+        #      (Makes exitstatus an optional param)
         try:
             print("Exit Code: " + str(exitstatus))
             loaded_config["test_hooks"]["after_suites"](exitstatus)
@@ -225,8 +231,6 @@ def cli_args(request):
     # Api holds the start of the url. Each test adds their endpoint.
     # If '--api' was used in the commandline:
     if request.config.getoption('--api') != None:
-        if "api_urls" not in loaded_config:
-            assert False, "Error: '--api' used, but 'api_urls' NOT defined in pytest_config.yml."
         all_args["api"] = lookup_api(request.config.getoption('--api'))
     # Elif try to load the 'default' api from config:
     elif "api_urls" in loaded_config and "default" in loaded_config["api_urls"]:
