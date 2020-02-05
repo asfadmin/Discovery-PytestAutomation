@@ -9,8 +9,6 @@ from copy import deepcopy   # To copy dicts w/out modifying original
 import_file_name = "pytest_managers.py"
 config_file_name = "pytest_config.yml"
 loaded_config = None # Gets set to contents of config_path, in 'import_config'
-import_path = None # Gets set in 
-config_path = None 
 
 def get_project_root():
     # Recurse back until you hit a .git folder:
@@ -21,36 +19,38 @@ def get_project_root():
     # Take off the .git and return the path.
     return os.path.dirname(git_root)
 
+def remove_submodules_from_paths(list_of_paths):
+    global project_root
+    submodule_path = os.path.join(project_root, ".gitmodules")
+    # If there are no submodules, nothing to do
+    if not os.path.isfile(submodule_path):
+        return list_of_paths
+    # Append path to valid_paths that don't contain a sub-repo
+    valid_paths = []
+    f = open(submodule_path, "r")
+    submodules = re.findall(r"path = (.*)", f.read())
+    for path in list_of_paths:
+        # If any of the path pieces are a submodule repo:
+        if len([directory for directory in path.split('/') if directory in submodules]) == 0:
+            valid_paths.append(path)
+    return valid_paths
+
 # Looks through project, starting at project_root, and does NOT go into submodules:
 #   (Returns the path if exactly 1 file is found, or throws an error)
-def get_path_from_name(name, project_root):
+def get_path_from_name(name):
+    global project_root
     recursive_path = os.path.abspath(os.path.join(project_root, "**", name))
     possible_paths = glob.glob(recursive_path, recursive=True)
-    submodules = []
     # Exclude all submodules this repo is in. (Stops it from conflicting with itself if those submodules contains this test framework)
-    submodule_path = os.path.join(project_root, ".gitmodules")
-    if os.path.isfile(submodule_path):
-        f = open(submodule_path, "r")
-        submodules = re.findall(r"path = (.*)", f.read())
-        paths = [] # possible_paths, without any that go into a submodule
-        print()
-        for path in possible_paths:
-            # If any of the path pieces are a submodule repo:
-            if len([directory for directory in path.split('/') if directory in submodules]) == 0:
-                paths.append(path)
-            else:
-                print("\nRemoving path: " + str(path))
-        # Save the new list w/ removed submodules, over the old one:
-        possible_paths = paths
+    possible_paths = remove_submodules_from_paths(possible_paths)
 
     if len(possible_paths) != 1:
         assert False, "Must have exactly one file named {0} inside project. Found {1} instead.\nPath used to find files: {2}.".format(name, len(possible_paths), recursive_path)
     return possible_paths[0]
 
 project_root = get_project_root()
-import_path = get_path_from_name(import_file_name, project_root)
-config_path = get_path_from_name(config_file_name, project_root)
-
+import_path = get_path_from_name(import_file_name)
+config_path = get_path_from_name(config_file_name)
 
 ####################
 # HELPER FUNCTIONS #
@@ -140,7 +140,7 @@ def import_config():
             # From here, you should be able to call tmp_config["method"](test_info) to run a test
             tmp_config["method_pointer"] = getattr(import_main, tmp_config["method"])
         except AttributeError:
-            assert False, "'{0}' not found in '{1}'.".format(tmp_config["method"], import_name)
+            assert False, "'{0}' not found in '{1}'.\nTried loading from: {2}.\n".format(tmp_config["method"], import_name, import_main.__file__)
         # Just guarantee it's there, for passing onto each test:
         if "variables" not in tmp_config:
             tmp_config["variables"] = None
@@ -176,7 +176,10 @@ def getConfig():
 def loadTestsFromDirectory(dir_path_root, recurse=False):
     tests_pattern = os.path.join(dir_path_root, "**", "test_*.y*ml")
     list_of_tests = []
-    for file in glob.glob(tests_pattern, recursive=recurse):
+    # Get all yml tests, then remove any that are outside of repo being tested:
+    list_of_test_paths = glob.glob(tests_pattern, recursive=recurse)
+    list_of_test_paths = remove_submodules_from_paths(list_of_test_paths)
+    for file in list_of_test_paths:
         yaml_dict = openYmlFile(file)
         if yaml_dict == None:
             print("PROBLEM PARSING YML: '{0}'. Skipping it.".format(file))
@@ -217,9 +220,8 @@ def pytest_sessionfinish(session, exitstatus):
         # Try first with passing the exitstatus, then w/out:
         #      (Makes exitstatus an optional param)
         try:
-            print("Exit Code: " + str(exitstatus))
             loaded_config["test_hooks"]["after_suites"](exitstatus)
-        except Exception as e:
+        except TypeError as e:
             loaded_config["test_hooks"]["after_suites"]()
 
 #############
