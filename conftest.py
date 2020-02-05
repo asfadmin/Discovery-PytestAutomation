@@ -1,30 +1,55 @@
 import pytest               # To use asserts and fixtures
-import glob                 # To recursivly find all ymls
+import glob, re             # To recursivly find all ymls
 import yaml                 # To open the ymls
 import os, sys              # For path manipulation/joining
 import importlib            # For returning modules back to the main script
 from copy import deepcopy   # To copy dicts w/out modifying original
 
 # GLOBALS:
-# import_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_managers.py")) # MUST end in .py
-# config_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_config.yml"))
-import_path = "pytest_managers.py"
-config_path = "pytest_config.yml"
+import_file_name = "pytest_managers.py"
+config_file_name = "pytest_config.yml"
 loaded_config = None # Gets set to contents of config_path, in 'import_config'
+import_path = None # Gets set in 
+config_path = None 
 
+def get_project_root():
+    # Recurse back until you hit a .git folder:
+    git_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".git"))
+    while not os.path.exists(git_root):
+        git_root = os.path.abspath(os.path.join(os.path.dirname(git_root), "..", ".git"))
+        assert git_root != "/.git", "PytestAutomation is not inside a repo. Could not find a .git folder behind this one."
+    # Take off the .git and return the path.
+    return os.path.dirname(git_root)
 
-
-# Looks recursivly starting one dir behind this file, for any files named 'name'.
-# If exactly *one* found, return it. Else exit the program and warn tester.
-def get_path_from_name(name):
-    recursive_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "**", name))
+# Looks through project, starting at project_root, and does NOT go into submodules:
+#   (Returns the path if exactly 1 file is found, or throws an error)
+def get_path_from_name(name, project_root):
+    recursive_path = os.path.abspath(os.path.join(project_root, "**", name))
     possible_paths = glob.glob(recursive_path, recursive=True)
+    submodules = []
+    # Exclude all submodules this repo is in. (Stops it from conflicting with itself if those submodules contains this test framework)
+    submodule_path = os.path.join(project_root, ".gitmodules")
+    if os.path.isfile(submodule_path):
+        f = open(submodule_path, "r")
+        submodules = re.findall(r"path = (.*)", f.read())
+        paths = [] # possible_paths, without any that go into a submodule
+        print()
+        for path in possible_paths:
+            # If any of the path pieces are a submodule repo:
+            if len([directory for directory in path.split('/') if directory in submodules]) == 0:
+                paths.append(path)
+            else:
+                print("\nRemoving path: " + str(path))
+        # Save the new list w/ removed submodules, over the old one:
+        possible_paths = paths
+
     if len(possible_paths) != 1:
         assert False, "Must have exactly one file named {0} inside project. Found {1} instead.\nPath used to find files: {2}.".format(name, len(possible_paths), recursive_path)
     return possible_paths[0]
-import_path = get_path_from_name(import_path)
-config_path = get_path_from_name(config_path)
 
+project_root = get_project_root()
+import_path = get_path_from_name(import_file_name, project_root)
+config_path = get_path_from_name(config_file_name, project_root)
 
 
 ####################
