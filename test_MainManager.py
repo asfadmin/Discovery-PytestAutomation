@@ -18,7 +18,8 @@ def test_main(test, cli_args):
 	found_test = False
 	for conf in main_config["test_types"]:
 		# If all of the required keys are in the test, you found it:
-		if set(conf["required_keys"]).issubset(test_info):
+		# If there are no required keys, assume all tests that get this far are for it:
+		if set(conf["required_keys"]).issubset(test_info) or conf["required_keys"] == [None]:
 			found_test = True
 			# Run the test:
 			# (NOT catching TypeError because if something *in* that test throws it, this would still catch...)

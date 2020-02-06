@@ -1,31 +1,56 @@
 import pytest               # To use asserts and fixtures
-import glob                 # To recursivly find all ymls
+import glob, re             # To recursivly find all ymls
 import yaml                 # To open the ymls
 import os, sys              # For path manipulation/joining
 import importlib            # For returning modules back to the main script
 from copy import deepcopy   # To copy dicts w/out modifying original
 
 # GLOBALS:
-# import_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_managers.py")) # MUST end in .py
-# config_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yml_tests", "pytest_config.yml"))
-import_path = "pytest_managers.py"
-config_path = "pytest_config.yml"
+import_file_name = "pytest_managers.py"
+config_file_name = "pytest_config.yml"
 loaded_config = None # Gets set to contents of config_path, in 'import_config'
 
+def get_project_root():
+    # Recurse back until you hit a .git folder:
+    git_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".git"))
+    while not os.path.exists(git_root):
+        git_root = os.path.abspath(os.path.join(os.path.dirname(git_root), "..", ".git"))
+        assert git_root != "/.git", "PytestAutomation is not inside a repo. Could not find a .git folder behind this one."
+    # Take off the .git and return the path.
+    return os.path.dirname(git_root)
 
+def remove_submodules_from_paths(list_of_paths):
+    global project_root
+    submodule_path = os.path.join(project_root, ".gitmodules")
+    # If there are no submodules, nothing to do
+    if not os.path.isfile(submodule_path):
+        return list_of_paths
+    # Append path to valid_paths that don't contain a sub-repo
+    valid_paths = []
+    f = open(submodule_path, "r")
+    submodules = re.findall(r"path = (.*)", f.read())
+    for path in list_of_paths:
+        # If any of the path pieces are a submodule repo:
+        if len([directory for directory in path.split('/') if directory in submodules]) == 0:
+            valid_paths.append(path)
+    return valid_paths
 
-# Looks recursivly starting one dir behind this file, for any files named 'name'.
-# If exactly *one* found, return it. Else exit the program and warn tester.
+# Looks through project, starting at project_root, and does NOT go into submodules:
+#   (Returns the path if exactly 1 file is found, or throws an error)
 def get_path_from_name(name):
-    recursive_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "**", name))
+    global project_root
+    recursive_path = os.path.abspath(os.path.join(project_root, "**", name))
     possible_paths = glob.glob(recursive_path, recursive=True)
+    # Exclude all submodules this repo is in. (Stops it from conflicting with itself if those submodules contains this test framework)
+    possible_paths = remove_submodules_from_paths(possible_paths)
+
     if len(possible_paths) != 1:
         assert False, "Must have exactly one file named {0} inside project. Found {1} instead.\nPath used to find files: {2}.".format(name, len(possible_paths), recursive_path)
     return possible_paths[0]
-import_path = get_path_from_name(import_path)
-config_path = get_path_from_name(config_path)
 
-
+project_root = get_project_root()
+import_path = get_path_from_name(import_file_name)
+config_path = get_path_from_name(config_file_name)
 
 ####################
 # HELPER FUNCTIONS #
@@ -78,12 +103,15 @@ def moveTitleIntoBlock(json_test, file_name):
 def import_config():
     global config_path
     global import_path
+
+    # openymlfile will print details on what goes wrong:
     master_config = openYmlFile(config_path)
     import_name = os.path.basename(import_path)[:-3] # [:-3] to take off the '.py'
 
-    # openymlfile will print details on what goes wrong too:
+    #  Quick sanity checks:
     assert master_config != None, "Problem with yml config. Path: '{0}'.".format(config_path)
     assert "test_types" in master_config, "Required key 'test_types' not found in {0}.".format(import_name)
+    assert isinstance(master_config["test_types"], type([])), "Problem in {0}: 'test_types' must be a list. (Currently type: {1}).".format(os.path.basename(import_path), type(master_config["test_types"]))
     # Import the 'import_name' package:
     try:
         # Lets you import files from the 'import' dir:
@@ -101,6 +129,8 @@ def import_config():
         # Make sure the config block parsed correctly, and contains the required keys:
         assert tmp_config != None, "Error parsing config. Block: '{0}'.".format(test_config)
         assert "required_keys" in tmp_config and "method" in tmp_config, "Required keys not found. (Keys: required_keys, method). \nBlock: '{0}'.".format(test_config)
+
+
         # If required_keys contains only one item, make it a list of one item:
         if not isinstance(tmp_config["required_keys"], type([])):
             tmp_config["required_keys"] = [tmp_config["required_keys"]]
@@ -110,7 +140,7 @@ def import_config():
             # From here, you should be able to call tmp_config["method"](test_info) to run a test
             tmp_config["method_pointer"] = getattr(import_main, tmp_config["method"])
         except AttributeError:
-            assert False, "'{0}' not found in '{1}'.".format(tmp_config["method"], import_name)
+            assert False, "'{0}' not found in '{1}'.\nTried loading from: {2}.\n".format(tmp_config["method"], import_name, import_main.__file__)
         # Just guarantee it's there, for passing onto each test:
         if "variables" not in tmp_config:
             tmp_config["variables"] = None
@@ -146,14 +176,17 @@ def getConfig():
 def loadTestsFromDirectory(dir_path_root, recurse=False):
     tests_pattern = os.path.join(dir_path_root, "**", "test_*.y*ml")
     list_of_tests = []
-    for file in glob.glob(tests_pattern, recursive=recurse):
+    # Get all yml tests, then remove any that are outside of repo being tested:
+    list_of_test_paths = glob.glob(tests_pattern, recursive=recurse)
+    list_of_test_paths = remove_submodules_from_paths(list_of_test_paths)
+    for file in list_of_test_paths:
         yaml_dict = openYmlFile(file)
         if yaml_dict == None:
             print("PROBLEM PARSING YML: '{0}'. Skipping it.".format(file))
             continue
         if not ("tests" in yaml_dict and isinstance(yaml_dict["tests"], type([]))):
             print("\n###########")
-            print("No tests found in Yaml: '{0}'. File needs 'tests' or 'url tests' key, with a list as the value.".format(file))
+            print("No tests found in Yaml: '{0}'. File needs 'tests' key, with a list as the value.".format(file))
             print("###########\n")
             continue
 
@@ -185,10 +218,10 @@ def pytest_sessionfinish(session, exitstatus):
     # If they declared a after-hook:
     if "after_suites" in loaded_config["test_hooks"]:
         # Try first with passing the exitstatus, then w/out:
+        #      (Makes exitstatus an optional param)
         try:
-            print("Exit Code: " + str(exitstatus))
             loaded_config["test_hooks"]["after_suites"](exitstatus)
-        except Exception as e:
+        except TypeError as e:
             loaded_config["test_hooks"]["after_suites"]()
 
 #############
@@ -225,8 +258,6 @@ def cli_args(request):
     # Api holds the start of the url. Each test adds their endpoint.
     # If '--api' was used in the commandline:
     if request.config.getoption('--api') != None:
-        if "api_urls" not in loaded_config:
-            assert False, "Error: '--api' used, but 'api_urls' NOT defined in pytest_config.yml."
         all_args["api"] = lookup_api(request.config.getoption('--api'))
     # Elif try to load the 'default' api from config:
     elif "api_urls" in loaded_config and "default" in loaded_config["api_urls"]:
