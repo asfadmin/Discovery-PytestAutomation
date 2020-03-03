@@ -33,6 +33,15 @@ test_types:
 For every test, it tries to match the keys in the test to 'required_keys', **from top to bottom**. If matched, it will try to load the declared method from 'pytest_managers.py' (Another required file). 
 The 'variables' key gets passed to every test that 'test block' runs. Here, it passes in a dict { throw_on_negative: False }. Useful for passing in urls, endpoints, etc that might change often for that type of test.
 
+Pre/post hooks:
+For running a method before/after the **entire** suite, you can add the following to pytest_config.yml:
+```yaml
+test_hooks:
+  before_suites: pytest_start
+  after_suites: pytest_end
+```
+You can use only one of these if the other isn't needed. This will search pytest_managers.py for a method 'pytest_start' when the suite kicks up, and runs it. Dito for after_suites, but after everything finishes. The after_suites method accepts an optional positional parameter that's the exit code of the run.
+
 ##### pytest_managers.py:
 Contains the code that gets executed, for each individual yml test. 
 Example:
