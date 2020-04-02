@@ -15,19 +15,24 @@ def test_main(test, cli_args):
 	helpers.skipTestsIfNecessary(test_info["title"], file_conf["yml name"], cli_args)
 
 	# pass the values to the right function:
-	found_test = False
 	for conf in main_config["test_types"]:
-		# If all of the required keys are in the test, you found it:
-		# If there are no required keys, assume all tests that get this far are for it:
-		if set(conf["required_keys"]).issubset(test_info) or conf["required_keys"] == [None]:
-			found_test = True
-			# Run the test:
-			# (NOT catching TypeError because if something *in* that test throws it, this would still catch...)
-			# try:
+		# If they only want a spicific type, and this conf isn't the one:
+		
+		# If you declare it, make sure the keys are within that test.
+		if "required_keys" not in conf or set(conf["required_keys"]).issubset(test_info):
+			passed_key_check = True
+		else:
+			passed_key_check = False
+
+		# If all the tests in a file, belong to a test type:
+		if "required_files" not in conf or conf["yml name"] in conf["required_files"]:
+			passed_file_check = True
+		else:
+			passed_file_check = False
+
+		# Run the test, if all the checks agree:
+		# (I broke this out seperatly, to add more later easily, and to allow you to use more than one at once)
+		if passed_key_check and passed_file_check:
 			conf["method_pointer"](test_info, file_conf, cli_args, conf["variables"])
-			# except TypeError:
-				# assert False, "Method '{0}' needs to accept three parameters. (test_info, file_config, cli_args).".format(conf["method"])
 			break
-	# If you never matched to a function, error out.
-	assert found_test, "Cannot determine test type. Test: {0}. File: {1}.".format(test_info["title"], file_conf["yml name"])
 

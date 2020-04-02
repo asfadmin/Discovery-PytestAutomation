@@ -128,12 +128,16 @@ def import_config():
         tmp_config = moveTitleIntoBlock(test_config, "pytest_config.yml")
         # Make sure the config block parsed correctly, and contains the required keys:
         assert tmp_config != None, "Error parsing config. Block: '{0}'.".format(test_config)
-        assert "required_keys" in tmp_config and "method" in tmp_config, "Required keys not found. (Keys: required_keys, method). \nBlock: '{0}'.".format(test_config)
+        assert "method" in tmp_config, "'method' key not found under test_type. \nBlock: '{0}'.".format(test_config)
 
 
-        # If required_keys contains only one item, make it a list of one item:
-        if not isinstance(tmp_config["required_keys"], type([])):
+        # If required_keys contains only one item, make it a list of that one item:
+        if "required_keys" in tmp_config and not isinstance(tmp_config["required_keys"], type([])):
             tmp_config["required_keys"] = [tmp_config["required_keys"]]
+        # Same for required_files
+        if "required_files" in tmp_config and not isinstance(tmp_config["required_files"], type([])):
+            tmp_config["required_files"] = [tmp_config["required_files"]]
+
         # Import the method from the module:
         try:
             # Saves the function to the 'method' key.
@@ -231,14 +235,21 @@ def pytest_sessionfinish(session, exitstatus):
 def pytest_addoption(parser):
     parser.addoption("--api", action="store", default=None,
         help = "Override which api ALL .yml tests use with this. (DEV/TEST/PROD, or url).")
-    parser.addoption("--only-run", action="append", default=None,
+    parser.addoption("--only-run-name", "--on", action="append", default=None,
         help = "Only run tests that contains this param in their name.")
-    parser.addoption("--dont-run", action="append", default=None,
+    parser.addoption("--dont-run-name", "--dn", action="append", default=None,
         help = "Dont run tests that contains this param in their name.")
-    parser.addoption("--only-run-file", action="append", default=None,
+    parser.addoption("--only-run-file", "--of", action="append", default=None,
         help = "Only run files that contain this in their name.")
-    parser.addoption("--dont-run-file", action="append", default=None,
+    parser.addoption("--dont-run-file", "--df", action="append", default=None,
         help = "Dont run files that contain this in their name.")
+    parser.addoption("--only-run-type", "--ot", action="append", default=None,
+        help = "Only run files that contain this in their name.")
+    parser.addoption("--dont-run-type", "--dt", action="append", default=None,
+        help = "Dont run files that contain this in their name.")
+    parser.addoption("--skip-all", action="store_true",
+        help = "Skips ALL the tests. (Added for pipeline use).")
+
 
 ## Returns the custom CLI options to a test when used in a param:
 @pytest.fixture
@@ -266,10 +277,13 @@ def cli_args(request):
     else:
         all_args['api'] = None
 
-    all_args['only run'] = request.config.getoption('--only-run')
-    all_args['dont run'] = request.config.getoption('--dont-run')
+    all_args['only run name'] = request.config.getoption('--only-run-name')
+    all_args['dont run name'] = request.config.getoption('--dont-run-name')
     all_args['only run file'] = request.config.getoption('--only-run-file')
     all_args['dont run file'] = request.config.getoption('--dont-run-file')
+    all_args['only run type'] = request.config.getoption('--only-run-type')
+    all_args['dont run type'] = request.config.getoption('--dont-run-type')
+    all_args['skip all'] = request.config.getoption('--skip-all')
     return all_args
 
 
@@ -277,10 +291,14 @@ def cli_args(request):
 # UTIL FUNCTIONS #
 ##################
 def skipTestsIfNecessary(test_name, file_name, cli_args):
-    only_run_cli = cli_args['only run']
-    dont_run_cli = cli_args['dont run']
+    only_run_cli = cli_args['only run name']
+    dont_run_cli = cli_args['dont run name']
     only_run_file_cli = cli_args['only run file']
     dont_run_file_cli = cli_args['dont run file']
+
+    # If they want to skip EVERYTHING:
+    if cli_args['skip all'] == True:
+        pytest.skip("Skipping ALL tests. (--skip-all was found).")
 
     ## If they passed '--only-run val', and val not in test title:
     if only_run_cli != None:
