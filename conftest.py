@@ -291,6 +291,8 @@ def cli_args(request):
 # UTIL FUNCTIONS #
 ##################
 def skipTestsIfNecessary(test_name, file_name, cli_args):
+    ## NOTE: Logic for only/dont-run-type is in test_MainManager.py
+    # I couldn't see a way to break that out of the test_types forloop.
     only_run_cli = cli_args['only run name']
     dont_run_cli = cli_args['dont run name']
     only_run_file_cli = cli_args['only run file']
