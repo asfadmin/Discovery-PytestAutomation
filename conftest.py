@@ -311,14 +311,14 @@ def skipTestsIfNecessary(test_name, file_name, cli_args):
                 title_in_cli_list = True
                 break
         if not title_in_cli_list:
-            pytest.skip("Title of test did not contain --only-run param (case insensitive)")
+            pytest.skip("Title of test did not contain --only-run-name param (case insensitive)")
 
     ## Same, but reversed for '--dont-run':
     if dont_run_cli != None:
         # Black list, skip as soon as you hit it:
         for dont_run_each in dont_run_cli:
             if dont_run_each.lower() in test_name.lower():
-                pytest.skip("Title of test contained --dont-run param (case insensitive)")
+                pytest.skip("Title of test contained --dont-run-name param (case insensitive)")
 
     ## Same as above two, but now for the <file> variants:
     if only_run_file_cli != None:
