@@ -11,10 +11,14 @@ all_tests = helpers.loadTestsFromDirectory(project_root, recurse=True)
 def test_main(test, cli_args):
     test_info = test[0] # That test's info
     file_conf = test[1] # Any extra info in that test's yml
+    # Basic error reporting, for when a test fails:
+    error_msg = "\nTitle: '{0}'".format(test_info["title"]) + "\nFile: '{0}'\n".format(file_conf["yml name"])
+
     # Skip the test if needed:
     helpers.skipTestsIfNecessary(test_info["title"], file_conf["yml name"], cli_args)
 
     # pass the values to the right function:
+    found_test = False
     for conf in main_config["test_types"]:
         
         ## BEGIN normal test_type parsing:
@@ -34,7 +38,7 @@ def test_main(test, cli_args):
         # Run the test, if all the checks agree:
         # (I broke this out seperatly, to add more later easily, and to allow you to use more than one at once)
         if passed_key_check and passed_file_check:
-
+            found_test = True
             ## Check if the tester want's to run/exclude a specific *type* of test:
             # (Can't do this any sooner, needs to make sure the for-loop is on your test-type)
             if cli_args["only run type"] != None:
@@ -50,7 +54,9 @@ def test_main(test, cli_args):
                 for dont_run_each in cli_args["dont run type"]:
                     if dont_run_each.lower() in conf["title"].lower():
                         pytest.skip("Type of test contained --dont-run param (case insensitive)")
+            
             ## Run the test:
             conf["method_pointer"](test_info, file_conf, cli_args, conf["variables"])
             break
+    assert found_test, "Could not find what test this block belongs to. {0}".format(error_msg)
 
