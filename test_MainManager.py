@@ -48,12 +48,12 @@ def test_main(test, cli_args):
                         title_hit_in_list = True
                         break
                 if not title_hit_in_list:
-                    pytest.skip("Type of test did not contain --only-run param (case insensitive)")
+                    pytest.skip("Type of test did not contain --only-run-type param (case insensitive)")
             # Same, but reversed for 'dont run':
             if cli_args["dont run type"] != None:
                 for dont_run_each in cli_args["dont run type"]:
                     if dont_run_each.lower() in conf["title"].lower():
-                        pytest.skip("Type of test contained --dont-run param (case insensitive)")
+                        pytest.skip("Type of test contained --dont-run-type param (case insensitive)")
             
             ## Run the test:
             conf["method_pointer"](test_info, file_conf, cli_args, conf["variables"])
