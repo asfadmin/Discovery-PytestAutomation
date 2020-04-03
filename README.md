@@ -15,7 +15,7 @@
 3) Add the required files below to your project. (Doesn't matter where, but names are case-sensitive, and only one  of each can exist).
 
 ### Required Files:
-It doesn't matter where in your project these exist, but names are case-sensitive, and exactly one of each can exist.
+It doesn't matter where in your project these exist, but names are case-sensitive, and *exactly* one of each can exist.
 ###### pytest_config.yml:
 After all the tests get loaded, this controls what tests get sent where, based on the dict keys within each test.
 Example:
@@ -26,12 +26,23 @@ test_types:
     method: test_PythonsAddition
 - For running factorial tests:
     required_keys: factor_num
+    required_file: test_factorials.yml
     method: test_NumpysFactor
     variables:
       throw_on_negative: False
 ```
-For every test, it tries to match the keys in the test to 'required_keys', **from top to bottom**. If matched, it will try to load the declared method from 'pytest_managers.py' (Another required file). 
+For every test, it tries to match the keys in the test to 'required_*' options, **from top to bottom**. If matched, it will try to load the declared method from 'pytest_managers.py' (Another required file). 
 The 'variables' key gets passed to every test that 'test block' runs. Here, it passes in a dict { throw_on_negative: False }. Useful for passing in urls, endpoints, etc that might change often for that type of test.
+'required_keys' will check if the test block contains ALL the keys listed to run. required_file needs the full name of the file (NOT the path). Both can require multiple in the same test, by making it a list, like in the first example above. You can also use both in the same block, and it will ONLY run tests that are both in that file, AND have those keys. If you use neither one, then ANY test that makes it that far down the list, will run there. This means if you have any test_type below the one without either 'required_*' key, it will never run.
+
+Pre/post hooks:
+For running a method before/after the **entire** suite, you can add the following to pytest_config.yml:
+```yaml
+test_hooks:
+  before_suites: pytest_start
+  after_suites: pytest_end
+```
+You can use any number of these. This will search pytest_managers.py for a method 'pytest_start' when the suite kicks up, and runs it. Dito for after_suites, but after everything finishes. The after_suites method accepts an optional positional parameter that's the exit code of the run.
 
 ##### pytest_managers.py:
 Contains the code that gets executed, for each individual yml test. 
@@ -68,5 +79,6 @@ pytest <pytest args here> . <custom args here>
 
 - Custom args:
     - '--api [local|dev|test|prod]' => Which api to hit. If input doesn't match these, it'll treat input as the url itself.  
-    - '--only-run, --dont-run' => Tries to find if the input is *inside* the test title, and determines if it  gets skipped.
-    - '--only-run-file', '--dont-run-file' => Determines if ALL tests in a file gets skipped, based on name of file. (Not path).
+    - '--only-run-name, --dont-run-name' (--on/--dn) => (Can use multiple times) Looks at the name of each test to determine if it needs to run.
+    - '--only-run-file', '--dont-run-file' (--of/--df) => (Can use multiple times) Determines if ALL tests in a file gets skipped, based on name of file. (Full name of file, but *not* the path).
+    - '--only-run-type', '--dont-run-type' (--ot/--dt) => (Can use multiple times) Looks at the title in pytest_config.yml. Tries to see if what is passed to these, is within the title.
