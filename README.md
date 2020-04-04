@@ -31,9 +31,9 @@ test_types:
     variables:
       throw_on_negative: False
 ```
-For every test, it tries to match the keys in the test to 'required_*' options, **from top to bottom**. If matched, it will try to load the declared method from 'pytest_managers.py' (Another required file). 
+For every test, it tries to match the keys in the test to 'required_\*' options, **from top to bottom**. If matched, it will try to load the declared method from 'pytest_managers.py' (Another required file). 
 The 'variables' key gets passed to every test that 'test block' runs. Here, it passes in a dict { throw_on_negative: False }. Useful for passing in urls, endpoints, etc that might change often for that type of test.
-'required_keys' will check if the test block contains ALL the keys listed to run. required_file needs the full name of the file (NOT the path). Both can require multiple in the same test, by making it a list, like in the first example above. You can also use both in the same block, and it will ONLY run tests that are both in that file, AND have those keys. If you use neither one, then ANY test that makes it that far down the list, will run there. This means if you have any test_type below the one without either 'required_*' key, it will never run.
+'required_keys' will check if the test block contains ALL the keys listed to run. required_file needs the full name of the file (NOT the path). Both can require multiple in the same test, by making it a list, like in the first example above. You can also use both in the same block, and it will ONLY run tests that are both in that file, AND have those keys. If you use neither one, then ANY test that makes it that far down the list, will run there. This means if you have any test_type below the one without either 'required_\*' key, it will never run.
 
 Pre/post hooks:
 For running a method before/after the **entire** suite, you can add the following to pytest_config.yml:
