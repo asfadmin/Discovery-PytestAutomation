@@ -30,7 +30,7 @@ def test_main(test, cli_args):
             passed_key_check = False
 
         # If all the tests in a file, belong to a test type:
-        if "required_files" not in conf or conf["yml name"] in conf["required_files"]:
+        if "required_files" not in conf or file_conf["yml name"] in conf["required_files"]:
             passed_file_check = True
         else:
             passed_file_check = False
