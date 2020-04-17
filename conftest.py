@@ -71,7 +71,7 @@ def openYmlFile(path):
             yaml_dict = yaml.safe_load(yaml_file)
         except yaml.YAMLError as e:
             print("\n###########")
-            print("Failed to parse yaml: '{0}'.".format(path))
+            print("Failed to parse yaml: '{0}'. Error: '{1}'.".format(path, e))
             print("###########\n")
             return None
     if yaml_dict == None:
@@ -87,7 +87,7 @@ def moveTitleIntoBlock(json_test, file_name):
     keys = list(json_test.keys())
     if len(keys) != 1:
         print("\n###########")
-        print("Yaml not formatted correctly. File: '{0}'. Test: '{1}'.".format(file_name, str(test)))
+        print("Yaml not formatted correctly. File: '{0}'. JSON: '{1}'.".format(file_name, str(json_test)))
         print("###########\n")
         return None
     title = keys[0]
@@ -225,7 +225,7 @@ def pytest_sessionfinish(session, exitstatus):
         #      (Makes exitstatus an optional param)
         try:
             loaded_config["test_hooks"]["after_suites"](exitstatus)
-        except TypeError as e:
+        except TypeError:
             loaded_config["test_hooks"]["after_suites"]()
 
 #############
@@ -290,16 +290,16 @@ def cli_args(request):
 ##################
 # UTIL FUNCTIONS #
 ##################
-def skipTestsIfNecessary(test_name, file_name, cli_args):
+def skipTestsIfNecessary(test_name, file_name, cli_options):
     ## NOTE: Logic for only/dont-run-type is in test_MainManager.py
     # I couldn't see a way to break that out of the test_types forloop.
-    only_run_cli = cli_args['only run name']
-    dont_run_cli = cli_args['dont run name']
-    only_run_file_cli = cli_args['only run file']
-    dont_run_file_cli = cli_args['dont run file']
+    only_run_cli = cli_options['only run name']
+    dont_run_cli = cli_options['dont run name']
+    only_run_file_cli = cli_options['only run file']
+    dont_run_file_cli = cli_options['dont run file']
 
     # If they want to skip EVERYTHING:
-    if cli_args['skip all'] == True:
+    if cli_options['skip all'] == True:
         pytest.skip("Skipping ALL tests. (--skip-all was found).")
 
     ## If they passed '--only-run val', and val not in test title:

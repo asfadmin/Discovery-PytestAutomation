@@ -1,5 +1,7 @@
 import conftest as helpers
-import sys, os, pytest
+import os
+import pytest
+from  copy import deepcopy
 
 # project root = One dir back from the dir this file is in
 project_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -56,7 +58,7 @@ def test_main(test, cli_args):
                         pytest.skip("Type of test contained --dont-run-type param (case insensitive)")
             
             ## Run the test:
-            conf["method_pointer"](test_info, file_conf, cli_args, conf["variables"])
+            conf["method_pointer"](test_info, deepcopy(file_conf), deepcopy(cli_args), deepcopy(conf["variables"]))
             break
     assert found_test, "Could not find what test this block belongs to. {0}".format(error_msg)
 
