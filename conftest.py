@@ -71,7 +71,7 @@ def openYmlFile(path):
             yaml_dict = yaml.safe_load(yaml_file)
         except yaml.YAMLError as e:
             print("\n###########")
-            print("Failed to parse yaml: '{0}'.".format(path))
+            print("Failed to parse yaml: '{0}'. Error: '{1}'.".format(path, e))
             print("###########\n")
             return None
     if yaml_dict == None:
@@ -87,7 +87,7 @@ def moveTitleIntoBlock(json_test, file_name):
     keys = list(json_test.keys())
     if len(keys) != 1:
         print("\n###########")
-        print("Yaml not formatted correctly. File: '{0}'. Test: '{1}'.".format(file_name, str(test)))
+        print("Yaml not formatted correctly. File: '{0}'. JSON: '{1}'.".format(file_name, str(json_test)))
         print("###########\n")
         return None
     title = keys[0]
@@ -225,7 +225,7 @@ def pytest_sessionfinish(session, exitstatus):
         #      (Makes exitstatus an optional param)
         try:
             loaded_config["test_hooks"]["after_suites"](exitstatus)
-        except TypeError as e:
+        except TypeError:
             loaded_config["test_hooks"]["after_suites"]()
 
 #############
