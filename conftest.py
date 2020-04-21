@@ -277,6 +277,15 @@ def cli_args(request):
     else:
         all_args['api'] = None
 
+    all_args["api prod list"] = []
+    if "api_urls" in loaded_config and "api_prod_list" in loaded_config["api_urls"]:
+        api_prod_list = loaded_config["api_urls"]["api_prod_list"]
+        # If there's only one sring, turn it into a list of that str
+        if not isinstance(api_prod_list, type([])):
+            api_prod_list = [api_prod_list]
+        for api in api_prod_list:
+            all_args["api prod list"].append(lookup_api(api))
+
     all_args['only run name'] = request.config.getoption('--only-run-name')
     all_args['dont run name'] = request.config.getoption('--dont-run-name')
     all_args['only run file'] = request.config.getoption('--only-run-file')
