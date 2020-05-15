@@ -25,6 +25,11 @@ class error_msg():
 
     # View/format the entire report (if a test fails):
     def get_info(self, fail_reason):
-        report = "{0}".format(fail_reason)
+        report = "Reason: '{0}'".format(fail_reason)
         report += "".join(self.error_msgs)
         return report
+
+    # Incase you want to append the vareable that caused the test to fail, and still get the report:
+    def append_then_get(self, variable, value, fail_reason, max_length=500, new_block=False):
+        self.append_report(variable, value, max_length=max_length, new_block=new_block)
+        return self.get_info(fail_reason)
