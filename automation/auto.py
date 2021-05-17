@@ -5,19 +5,16 @@ import os, sys              # For path manipulation/joining
 import importlib            # For returning modules back to the main script
 from copy import deepcopy   # To copy dicts w/out modifying original
 
+print()
+print("HITTTTT - automation")
+print()
 # GLOBALS:
 import_file_name = "pytest_managers.py"
 config_file_name = "pytest_config.yml"
 loaded_config = None # Gets set to contents of config_path, in 'import_config'
 
 def get_project_root():
-    # Recurse back until you hit a .git folder:
-    git_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".git"))
-    while not os.path.exists(git_root):
-        git_root = os.path.abspath(os.path.join(os.path.dirname(git_root), "..", ".git"))
-        assert git_root != "/.git", "PytestAutomation is not inside a repo. Could not find a .git folder behind this one."
-    # Take off the .git and return the path.
-    return os.path.dirname(git_root)
+    return os.getcwd()
 
 def remove_submodules_from_paths(list_of_paths):
     global project_root

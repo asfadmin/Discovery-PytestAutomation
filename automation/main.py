@@ -1,4 +1,4 @@
-import conftest as helpers
+from . import auto as helpers
 import os
 import pytest
 from  copy import deepcopy
@@ -7,7 +7,9 @@ from  copy import deepcopy
 project_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 main_config = helpers.getConfig()
 all_tests = helpers.loadTestsFromDirectory(project_root, recurse=True)
-
+print()
+print("HITTTTT - MainManager")
+print()
 # For each item in the list, run it though the suite:
 @pytest.mark.parametrize("test", all_tests)
 def test_main(test, cli_args):
