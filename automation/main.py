@@ -7,9 +7,7 @@ from  copy import deepcopy
 project_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 main_config = helpers.getConfig()
 all_tests = helpers.loadTestsFromDirectory(project_root, recurse=True)
-print()
-print("HITTTTT - MainManager")
-print()
+
 # For each item in the list, run it though the suite:
 @pytest.mark.parametrize("test", all_tests)
 def test_main(test, cli_args):
@@ -63,4 +61,24 @@ def test_main(test, cli_args):
             conf["method_pointer"](test_info, deepcopy(file_conf), deepcopy(cli_args), deepcopy(conf["variables"]))
             break
     assert found_test, "Could not find what test this block belongs to. {0}".format(error_msg)
+
+## Custom CLI options: 
+def pytest_addoption(parser):
+    group = parser.getgroup('PytestAuto')
+    group.addoption("--api", action="store", default=None,
+        help = "Override which api ALL .yml tests use with this. (DEV/TEST/PROD, or url).")
+    group.addoption("--only-run-name", "--on", action="append", default=None,
+        help = "Only run tests that contains this param in their name.")
+    group.addoption("--dont-run-name", "--dn", action="append", default=None,
+        help = "Dont run tests that contains this param in their name.")
+    group.addoption("--only-run-file", "--of", action="append", default=None,
+        help = "Only run files that contain this in their name.")
+    group.addoption("--dont-run-file", "--df", action="append", default=None,
+        help = "Dont run files that contain this in their name.")
+    group.addoption("--only-run-type", "--ot", action="append", default=None,
+        help = "Only run files that contain this in their name.")
+    group.addoption("--dont-run-type", "--dt", action="append", default=None,
+        help = "Dont run files that contain this in their name.")
+    group.addoption("--skip-all", action="store_true",
+        help = "Skips ALL the tests. (Added for pipeline use).")
 

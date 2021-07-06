@@ -5,9 +5,6 @@ import os, sys              # For path manipulation/joining
 import importlib            # For returning modules back to the main script
 from copy import deepcopy   # To copy dicts w/out modifying original
 
-print()
-print("HITTTTT - automation")
-print()
 # GLOBALS:
 import_file_name = "pytest_managers.py"
 config_file_name = "pytest_config.yml"
@@ -228,26 +225,6 @@ def pytest_sessionfinish(session, exitstatus):
 #############
 # CLI STUFF #
 #############
-## Custom CLI options: 
-def pytest_addoption(parser):
-    parser.addoption("--api", action="store", default=None,
-        help = "Override which api ALL .yml tests use with this. (DEV/TEST/PROD, or url).")
-    parser.addoption("--only-run-name", "--on", action="append", default=None,
-        help = "Only run tests that contains this param in their name.")
-    parser.addoption("--dont-run-name", "--dn", action="append", default=None,
-        help = "Dont run tests that contains this param in their name.")
-    parser.addoption("--only-run-file", "--of", action="append", default=None,
-        help = "Only run files that contain this in their name.")
-    parser.addoption("--dont-run-file", "--df", action="append", default=None,
-        help = "Dont run files that contain this in their name.")
-    parser.addoption("--only-run-type", "--ot", action="append", default=None,
-        help = "Only run files that contain this in their name.")
-    parser.addoption("--dont-run-type", "--dt", action="append", default=None,
-        help = "Dont run files that contain this in their name.")
-    parser.addoption("--skip-all", action="store_true",
-        help = "Skips ALL the tests. (Added for pipeline use).")
-
-
 ## Returns the custom CLI options to a test when used in a param:
 @pytest.fixture
 def cli_args(request):
