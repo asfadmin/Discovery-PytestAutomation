@@ -10,10 +10,10 @@ setup(
     description="pytest plugin for building a test suite, using YAML files.",
     long_discription=long_discription,
     long_description_content_type="text/markdown",
-    packages=["automation"],
+    packages=["pytestautomation"],
     url="https://github.com/asfadmin/Discovery-PytestAutomation",
     # the following makes a plugin available to pytest
-    entry_points={"pytest11": ["automation = automation.main"]},
+    entry_points={"pytest11": ["pytestautomation = automation.plugin"]},
     # custom PyPI classifier for pytest plugins
     classifiers=["Framework :: Pytest"],
     install_requires=[
