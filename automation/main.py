@@ -1,14 +1,155 @@
 from . import auto as helpers
 import os
+import sys
 import pytest
+import glob
 import yaml
+import re
+import importlib
 from  copy import deepcopy
+import warnings
+
+PYTEST_CONFIG_INFO = None
+
+#### REWRITTING CURRENT HELPERS ####
+
+def remove_submodule_paths(paths: list) -> list:
+    submodule_path = os.path.join(os.getcwd(), ".gitmodules")
+    # If there are no submodules, nothing to do
+    if not os.path.isfile(submodule_path):
+        return paths
+    # Append path to valid_paths that don't contain a sub-repo
+    valid_paths = []
+    f = open(submodule_path, "r")
+    submodules = re.findall(r"path = (.*)", f.read())
+    for path in paths:
+        # If any of the path parts name don't match a submodule repo, add it:
+        if len([directory for directory in path.split('/') if directory in submodules]) == 0:
+            valid_paths.append(path)
+    return valid_paths        
+
+def get_file_from_name(name: str) -> str:
+    # From your current dir, find all the files with this name:
+    recursive_path = os.path.abspath(os.path.join(os.getcwd(), "**", name))
+    possible_paths = glob.glob(recursive_path, recursive=True)
+    # If any are in a sub-repo/submodule, ignore it. (They might have their *own* config):
+    possible_paths = remove_submodule_paths(possible_paths)
+    # Make sure you got only found one config:
+    assert len(possible_paths) == 1, "WRONG NUMBER OF CONFIGS: Must have exactly one '{0}' file inside project. Found {1} instead.\nBase path used to find files: {2}.".format(name, len(possible_paths), recursive_path)
+    return possible_paths[0]
+
+## Open yml/yaml File:
+#    Opens it and returns contents, or None if problems happen
+def loadYamlFile(path: str):
+    path = os.path.abspath(path)
+    if not os.path.isfile(path):
+        warnings.warn(UserWarning("YAML ERROR: File not found: '{0}'.".format(path)))
+    with open(path, "r") as yaml_file:
+        try:
+            yaml_dict = yaml.safe_load(yaml_file)
+        except yaml.YAMLError as e:
+            warnings.warn(UserWarning("YAML ERROR: Couldn't read file: '{0}'. Error '{1}'.".format(path, str(e))))
+            return None
+    if yaml_dict == None:
+        warnings.warn(UserWarning("YAML ERROR: File is empty: '{0}'.".format(path)))
+    return yaml_dict
+
+## Given "key: val", returns key, val:
+#    Usefull with "title: {test dict}" senarios
+#    file to report error if something's not formated
+def seperateKeyVal(mydict: dict, file: str):
+    num_test_titles = len(list(mydict.keys()))
+    assert num_test_titles == 1, "MISFORMATTED TEST: {0} keys found in a test. Only have 1, the title of the test. File: {1}".format(num_test_titles, file)
+    # return the individual key/val
+    name, json_info = next(iter( mydict.items() ))
+    return name, json_info
+
+
+## Validates both pytest_managers.py and pytest_config.py, then loads their methods
+# and stores pointers in a dict, for tests to run from.
+def loadConfig():
+    ## Find pytest_manager.py and pytest_config.yml
+    pytest_managers_path = get_file_from_name("pytest_managers.py")
+    pytest_config_path = get_file_from_name("pytest_config.yml")
+
+    ## Load those methods, import what's needed. Save as global (to load in each YamlItem)
+    pytest_config_info = loadYamlFile(pytest_config_path)
+
+    assert pytest_config_info is not None, "CONFIG ERROR: Could not load pytest_config.py (Check warnings)."
+    assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest_config.yml'."
+    assert isinstance(pytest_config_info["test_types"], type([])), "CONFIG ERROR: 'test_types' must be a list inside 'pytest_config.yml'. (Currently type '{0}').".format(type(master_config["test_types"]))
+    
+    # Add the path to PYTHONPATH, so you can import pytest_managers:
+    sys.path.append(os.path.dirname(pytest_managers_path))
+    try:
+        # Actually import pytest_managers now:
+        pytest_managers_module = importlib.import_module("pytest_managers")
+    except ImportError as e:
+        assert False, "IMPORT ERROR: Problem importing '{0}'. Error '{1}'.".format(pytest_managers_path, str(e))
+    # Done with the import, cleanup your path:
+    sys.path.remove(os.path.dirname(pytest_managers_path))
+
+    # Time to load the tests inside the config:
+    for ii, test_config in enumerate(pytest_config_info["test_types"]):
+        title, test_info = seperateKeyVal(test_config, "pytest_config.yml")
+
+        # If "required_keys" or "required_files" field contain one item, turn into list of that one item:
+        if "required_keys" in test_info and not isinstance(test_info["required_keys"], type([])):
+            test_info["required_keys"] = [test_info["required_keys"]]
+        if "required_files" in test_info and not isinstance(test_info["required_files"], type([])):
+            test_info["required_files"] = [test_info["required_files"]]
+
+        # Make sure test_info has required keys:
+        assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest_config.yml)".format(title)
+
+        # Import the method inside the module:
+        try:
+            # This makes it so you can write test_info["method_pointer"](args) to actually call the method:
+            test_info["method_pointer"] = getattr(pytest_managers_module, test_info["method"])
+        except AttributeError:
+            assert False, "IMPORT ERROR: '{0}' not found in 'pytest_managers.py'.\nTried loading from: {1}.\n".format(test_info["method"], pytest_managers_module.__file__)
+        # Just a guarantee this field is declared, to pass into functions:
+        if "variables" not in test_info:
+            test_info["variables"] = None
+        # Save it:
+        pytest_config_info["test_types"][ii] = test_info
+
+    # Load the hooks:
+    if "test_hooks" not in pytest_config_info:
+        pytest_config_info["test_hooks"] = {}
+    # If trying to do something before the test suite:
+    if "before_suites" in pytest_config_info["test_hooks"]:
+        try:
+            pytest_config_info["test_hooks"]["before_suites_pointer"] = getattr(pytest_managers_module, pytest_config_info["test_hooks"]["before_suites"])
+        except AttributeError:
+                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(pytest_config_info["test_hooks"]["before_suites"], pytest_managers_module)
+    # If trying to do something after the test suite:
+    if "after_suites" in pytest_config_info["test_hooks"]:
+        try:
+            pytest_config_info["test_hooks"]["after_suites_pointer"] = getattr(pytest_managers_module, pytest_config_info["test_hooks"]["after_suites"])
+        except AttributeError:
+                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(pytest_config_info["test_hooks"]["after_suites"], pytest_managers_module)    
+    return pytest_config_info
+
+####################################
 
 def pytest_sessionstart(session):
-    # 1) Find pytest_manager.py and pytest_config.yml
-    # 2) Load those methods, import what's needed. Save as global (to load in each YamlItem)
-    # 3) If hook is defined in pytest_config, run it here.
-    pass
+    config_info = loadConfig()
+    ## If hook is defined in pytest_config, run it here.
+    if "before_suites" in config_info["test_hooks"]:
+        config_info["test_hooks"]["before_suites_pointer"](session)
+    # Save info to a global, to use with each test:
+    global PYTEST_CONFIG_INFO
+    PYTEST_CONFIG_INFO = config_info
+
+def pytest_sessionfinish(session, exitstatus):
+    if "aftersuites" in PYTEST_CONFIG_INFO["test_hooks"]:
+        # Try first with passing the exitstatus, then w/out:
+        #      (Makes exitstatus an optional param)
+        try:
+            PYTEST_CONFIG_INFO["test_hooks"]["after_suites"](session, exitstatus)
+        except TypeError:
+            PYTEST_CONFIG_INFO["test_hooks"]["after_suites"](session)
 
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
 def pytest_collect_file(parent, path):
@@ -22,16 +163,24 @@ class YamlFile(pytest.File):
 
     def collect(self):
         data = yaml.safe_load(self.fspath.open())
-        if "tests" in data:
-            for test in data["tests"]:
-                # Get the individual key/val
-                name, info = next(iter( test.items() ))
-                yield YamlItem.from_parent(self, name=name, item=info)
+
+        # Make sure you can load it, and it has tests:
+        if data is None or "tests" not in data:
+            warnings.warn(UserWarning("Unable to load tests from file: '{0}'.".format(self.fspath)))
+            return
+
+        for json_test in data["tests"]:
+            name, json_info = seperateKeyVal(json_test, self.fspath)
+            yield YamlItem.from_parent(self, name=name, test_info=json_info)
+@pytest.fixture
+def testingasdf():
+    return "SUCCESS"
 
 class YamlItem(pytest.Item):
-    def __init__(self, name, parent, item):
+    def __init__(self, name, parent, test_info):
         super().__init__(name, parent)
-        self.item = item
+        self.name = name
+        self.test_info = test_info
     
     def runtest(self):
         pass
