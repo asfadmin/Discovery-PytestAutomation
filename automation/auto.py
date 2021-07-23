@@ -42,9 +42,9 @@ def get_path_from_name(name):
         assert False, "Must have exactly one file named {0} inside project. Found {1} instead.\nPath used to find files: {2}.".format(name, len(possible_paths), recursive_path)
     return possible_paths[0]
 
-project_root = get_project_root()
-import_path = get_path_from_name(import_file_name)
-config_path = get_path_from_name(config_file_name)
+# project_root = get_project_root()
+# import_path = get_path_from_name(import_file_name)
+# config_path = get_path_from_name(config_file_name)
 
 ####################
 # HELPER FUNCTIONS #
@@ -163,7 +163,7 @@ def import_config():
     else:
         master_config["test_hooks"] = {}
     return master_config
-loaded_config = import_config()
+# loaded_config = import_config()
 
 ## Imports the functions defined in the config, and returns them w/ everything in a dict. 
 def getConfig():
