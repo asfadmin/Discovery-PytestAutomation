@@ -9,7 +9,7 @@ import importlib
 from  copy import deepcopy
 import warnings
 
-PYTEST_CONFIG_INFO = None
+PYTEST_CONFIG_INFO = {}
 
 #### REWRITTING CURRENT HELPERS ####
 
@@ -40,18 +40,29 @@ def get_file_from_name(name: str) -> str:
 
 ## Open yml/yaml File:
 #    Opens it and returns contents, or None if problems happen
-def loadYamlFile(path: str):
+#    (Or throw if problems happen, if required == True)
+def loadYamlFile(path: str, required: bool=False):
     path = os.path.abspath(path)
     if not os.path.isfile(path):
-        warnings.warn(UserWarning("YAML ERROR: File not found: '{0}'.".format(path)))
+        error_msg = "YAML ERROR: File not found: '{0}'.".format(path)
+        # Throw if this is required to work, or warn otherwise
+        assert not required, error_msg
+        warnings.warn(UserWarning(error_msg))
+        return None
     with open(path, "r") as yaml_file:
         try:
             yaml_dict = yaml.safe_load(yaml_file)
         except yaml.YAMLError as e:
-            warnings.warn(UserWarning("YAML ERROR: Couldn't read file: '{0}'. Error '{1}'.".format(path, str(e))))
+            error_msg = "YAML ERROR: Couldn't read file: '{0}'. Error '{1}'.".format(path, str(e))
+            # Throw if this is required to work, or warn otherwise
+            assert not required, error_msg
+            warnings.warn(UserWarning(error_msg))
             return None
     if yaml_dict == None:
-        warnings.warn(UserWarning("YAML ERROR: File is empty: '{0}'.".format(path)))
+        error_msg = "YAML ERROR: File is empty: '{0}'.".format(path)
+        # Throw if this is required to work, or warn otherwise
+        assert not required, error_msg
+        warnings.warn(UserWarning(error_msg))
     return yaml_dict
 
 ## Given "key: val", returns key, val:
@@ -64,21 +75,7 @@ def seperateKeyVal(mydict: dict, file: str):
     name, json_info = next(iter( mydict.items() ))
     return name, json_info
 
-
-## Validates both pytest_managers.py and pytest_config.py, then loads their methods
-# and stores pointers in a dict, for tests to run from.
-def loadConfig():
-    ## Find pytest_manager.py and pytest_config.yml
-    pytest_managers_path = get_file_from_name("pytest_managers.py")
-    pytest_config_path = get_file_from_name("pytest_config.yml")
-
-    ## Load those methods, import what's needed. Save as global (to load in each YamlItem)
-    pytest_config_info = loadYamlFile(pytest_config_path)
-
-    assert pytest_config_info is not None, "CONFIG ERROR: Could not load pytest_config.py (Check warnings)."
-    assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest_config.yml'."
-    assert isinstance(pytest_config_info["test_types"], type([])), "CONFIG ERROR: 'test_types' must be a list inside 'pytest_config.yml'. (Currently type '{0}').".format(type(master_config["test_types"]))
-    
+def getPytestManagerModule(pytest_managers_path: str):
     # Add the path to PYTHONPATH, so you can import pytest_managers:
     sys.path.append(os.path.dirname(pytest_managers_path))
     try:
@@ -88,9 +85,69 @@ def loadConfig():
         assert False, "IMPORT ERROR: Problem importing '{0}'. Error '{1}'.".format(pytest_managers_path, str(e))
     # Done with the import, cleanup your path:
     sys.path.remove(os.path.dirname(pytest_managers_path))
+    return pytest_managers_module
+
+def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
+    # If they want to skip EVERYTHING:
+    if cli_config.getoption("--skip-all"):
+        pytest.skip("Skipping ALL tests. (--skip-all cli arg was found).")
+    
+    ### ONLY/DONT RUN NAME:
+    # If they only want to run something, based on the test title:
+    if cli_config.getoption("--only-run-name") != None:
+        # If you match with ANY of the values passed to "--only-run-name":
+        found_in_title = False
+        for only_run_filter in cli_config.getoption("--only-run-name"):
+            if only_run_filter.lower() in test_name.lower():
+                # Found it!
+                found_in_title = True
+                break
+        # Check if you found it. If you didn't, skip the test:
+        if not found_in_title:
+            pytest.skip("Title of test did not contain --only-run-name param (case insensitive)")
+    # If they DONT want to run something, based on test title:
+    if cli_config.getoption("--dont-run-name") != None:
+        # Nice thing here is, you can skip the second you find it:
+        for dont_run_filter in cli_config.getoption("--dont-run-name"):
+            if dont_run_filter.lower() in test_name.lower():
+                pytest.skip("Title of test contained --dont-run-name param (case insensitive)")
+    
+    ### ONLY/DONT RUN FILE:
+    # If they only want to run something, based on the file name:
+    if cli_config.getoption("--only-run-file") != None:
+        # If you match with ANY of the values passed to "--only-run-file":
+        found_in_file = False
+        for only_run_filter in cli_config.getoption("--only-run-file"):
+            if only_run_filter.lower() in file_name.lower():
+                # Found it!
+                found_in_file = True
+                break
+        # Check if you found it. If you didn't, skip the test:
+        if not found_in_file:
+            pytest.skip("Name of file did not contain --only-run-file param (case insensitive)")
+    # If they DONT want to run something, based on file name:
+    if cli_config.getoption("--dont-run-file") != None:
+        # Nice thing here is, you can skip the second you find it:
+        for dont_run_filter in cli_config.getoption("--dont-run-file"):
+            if dont_run_filter.lower() in file_name.lower():
+                pytest.skip("Name of file contained --dont-run-file param (case insensitive)")
+
+
+## Validates both pytest_managers.py and pytest_config.py, then loads their methods
+# and stores pointers in a dict, for tests to run from.
+def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
+    ## Load those methods, import what's needed. Save as global (to load in each YamlItem)
+    pytest_config_info = loadYamlFile(pytest_config_path, required=True)
+
+    assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest_config.yml'."
+    assert isinstance(pytest_config_info["test_types"], type([])), "CONFIG ERROR: 'test_types' must be a list inside 'pytest_config.yml'. (Currently type '{0}').".format(type(pytest_config_info["test_types"]))
+
+    list_of_tests = pytest_config_info["test_types"]
+
+    pytest_managers_module = getPytestManagerModule(pytest_managers_path)
 
     # Time to load the tests inside the config:
-    for ii, test_config in enumerate(pytest_config_info["test_types"]):
+    for ii, test_config in enumerate(list_of_tests):
         title, test_info = seperateKeyVal(test_config, "pytest_config.yml")
 
         # If "required_keys" or "required_files" field contain one item, turn into list of that one item:
@@ -112,44 +169,129 @@ def loadConfig():
         if "variables" not in test_info:
             test_info["variables"] = None
         # Save it:
-        pytest_config_info["test_types"][ii] = test_info
+        list_of_tests[ii] = test_info
+    return { "test_types": list_of_tests }
 
-    # Load the hooks:
+
+def loadTestHooks(pytest_managers_path: str, pytest_config_path: str):
+    pytest_config_info = loadYamlFile(pytest_config_path, required=True)
+    pytest_managers_module = getPytestManagerModule(pytest_managers_path)
+
+    # Load the hooks, if they exist:
     if "test_hooks" not in pytest_config_info:
-        pytest_config_info["test_hooks"] = {}
+        return { "test_hooks": {} }
+
+    # Make sure it's formated correctly:
+    test_hooks_info = pytest_config_info["test_hooks"]
+    assert isinstance(test_hooks_info, type({})), "CONFIG ERROR: Inside 'pytest_config.yml', 'test_hooks' must contain a DICT of wanted hooks. (Currently type '{0}'.)".format(type(test_hooks_info))
+
+    ### HOOKS FOR TEST SUITE:
     # If trying to do something before the test suite:
-    if "before_suites" in pytest_config_info["test_hooks"]:
+    if "before_suites" in test_hooks_info:
         try:
-            pytest_config_info["test_hooks"]["before_suites_pointer"] = getattr(pytest_managers_module, pytest_config_info["test_hooks"]["before_suites"])
+            test_hooks_info["before_suites_pointer"] = getattr(pytest_managers_module, test_hooks_info["before_suites"])
         except AttributeError:
-                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(pytest_config_info["test_hooks"]["before_suites"], pytest_managers_module)
+                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(test_hooks_info["before_suites"], pytest_managers_module)
     # If trying to do something after the test suite:
-    if "after_suites" in pytest_config_info["test_hooks"]:
+    if "after_suites" in test_hooks_info:
         try:
-            pytest_config_info["test_hooks"]["after_suites_pointer"] = getattr(pytest_managers_module, pytest_config_info["test_hooks"]["after_suites"])
+            test_hooks_info["after_suites_pointer"] = getattr(pytest_managers_module, test_hooks_info["after_suites"])
         except AttributeError:
-                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(pytest_config_info["test_hooks"]["after_suites"], pytest_managers_module)    
-    return pytest_config_info
+                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(test_hooks_info["after_suites"], pytest_managers_module)    
+    return { "test_hooks": test_hooks_info }
+
+def loadAddCliOptions(pytest_managers_path: str, pytest_config_path: str):
+    pytest_config_info = loadYamlFile(pytest_config_path, required=True)
+    pytest_managers_module = getPytestManagerModule(pytest_managers_path)
+
+    # Start parsing the extra options, if they exist:
+    if "add_cli_options" not in pytest_config_info:
+        return { "add_cli_options": {} }
+
+    # Make sure it's formated correctly:
+    add_cli_options_info = pytest_config_info["add_cli_options"]
+    assert isinstance(add_cli_options_info, type([])), "CONFIG ERROR: Inside 'pytest_config.yml', 'add_cli_options' must contain a LIST of wanted hooks. (Currently type '{0}'.)".format(type(add_cli_options_info))
+
+    #############################
+    # TODO: PLACEHOLDER While I finish this section
+    # Note, maybe this is not needed? Look what happens if searchAPI has
+    # It's own conftest.py that adds options. Maybe it'll pull it correctly still
+    return { "add_cli_options": {} }
+    #############################
+
+    # NOTE for checking if type == str, or custom function:
+    # Use https://stackoverflow.com/questions/38171243/python-check-for-class-existance
+    try:
+        var = file_type() # This won't throw if it's "str" or something
+    except NameError:
+        # Now try to load it from pytest_managers.py
+        pass
 
 ####################################
 
+# Runs once at the start of everything:
 def pytest_sessionstart(session):
-    config_info = loadConfig()
-    ## If hook is defined in pytest_config, run it here.
-    if "before_suites" in config_info["test_hooks"]:
-        config_info["test_hooks"]["before_suites_pointer"](session)
+    # Figure out where core files are in project
+    pytest_config_path = get_file_from_name("pytest_config.yml")
+    pytest_managers_path = get_file_from_name("pytest_managers.py")
+
+    # Load info from said core files:
+    # (Format of returned dicts is still {"main_key": {ALL_KEY_VALS_HERE}}, so different
+    #   "load*" methods don't conflict with one anther. i.e. test_hooks == {"test_hooks": {ALL_ACTUALL_INFO_HERE}})
+    test_types_info = loadTestTypes(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
+    test_hooks_info = loadTestHooks(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
+    
     # Save info to a global, to use with each test:
     global PYTEST_CONFIG_INFO
-    PYTEST_CONFIG_INFO = config_info
+    PYTEST_CONFIG_INFO.update(test_types_info)
+    PYTEST_CONFIG_INFO.update(test_hooks_info)
 
+    ## If hook is defined in pytest_config.yml, run it here.
+    if "before_suites" in PYTEST_CONFIG_INFO["test_hooks"]:
+        PYTEST_CONFIG_INFO["test_hooks"]["before_suites_pointer"](session)
+
+
+# Runs once when the entire suite finishes:
 def pytest_sessionfinish(session, exitstatus):
-    if "aftersuites" in PYTEST_CONFIG_INFO["test_hooks"]:
+    if "after_suites" in PYTEST_CONFIG_INFO["test_hooks"]:
         # Try first with passing the exitstatus, then w/out:
         #      (Makes exitstatus an optional param)
         try:
             PYTEST_CONFIG_INFO["test_hooks"]["after_suites"](session, exitstatus)
         except TypeError:
             PYTEST_CONFIG_INFO["test_hooks"]["after_suites"](session)
+
+## Custom CLI options: 
+def pytest_addoption(parser):
+    group = parser.getgroup('PytestAutomation')
+    group.addoption("--only-run-name", "--on", action="append", default=None,
+        help = "Only run tests that contains this param in their name.")
+    group.addoption("--dont-run-name", "--dn", action="append", default=None,
+        help = "Dont run tests that contains this param in their name.")
+    group.addoption("--only-run-file", "--of", action="append", default=None,
+        help = "Only run yml files that contain this in their name.")
+    group.addoption("--dont-run-file", "--df", action="append", default=None,
+        help = "Dont run yml files that contain this in their name.")
+    group.addoption("--only-run-type", "--ot", action="append", default=None,
+        help = "Only run test types that contain this in their name.")
+    group.addoption("--dont-run-type", "--dt", action="append", default=None,
+        help = "Dont run test types that contain this in their name.")
+    group.addoption("--skip-all", action="store_true",
+        help = "Skips ALL the tests. (Added for pipeline use).")
+
+    ## START Looking if any are declared in the config:
+    ## (MAYBE not needed, see how conftest works when inside SearchAPI)
+    # Figure out where core files are in project
+    pytest_config_path = get_file_from_name("pytest_config.yml")
+    pytest_managers_path = get_file_from_name("pytest_managers.py")
+    add_cli_options_info = loadAddCliOptions(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
+
+    # if "add_cli_options" in PYTEST_CONFIG_INFO:
+    #     print("HITTTTT")
+    # group.addoption("--api", action="store", default=None,
+    #     help = "Override which api ALL .yml tests use with this. (DEV/TEST/PROD, or url).")
+
+
 
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
 def pytest_collect_file(parent, path):
@@ -159,7 +301,11 @@ def pytest_collect_file(parent, path):
 class YamlFile(pytest.File):
     def __init__(self, parent, fspath, test):
         super().__init__(parent=parent, fspath=fspath)
+        self.path = fspath
         self.test = test
+
+    def get_name(self):
+        return os.path.basename(self.path)
 
     def collect(self):
         data = yaml.safe_load(self.fspath.open())
@@ -172,99 +318,20 @@ class YamlFile(pytest.File):
         for json_test in data["tests"]:
             name, json_info = seperateKeyVal(json_test, self.fspath)
             yield YamlItem.from_parent(self, name=name, test_info=json_info)
-@pytest.fixture
-def testingasdf():
-    return "SUCCESS"
 
 class YamlItem(pytest.Item):
+
     def __init__(self, name, parent, test_info):
         super().__init__(name, parent)
-        self.name = name
+        self.test_name = name
+        self.file_name = parent.get_name()
         self.test_info = test_info
     
     def runtest(self):
+        # TODO: Loop through, and find out what test type to use here <---
+
+        skipTestsIfNecessary(cli_config=self.config, test_name=self.test_name, file_name=self.file_name, test_type="TODO")
+
+        # TODO: Actually run the test here <-------------------------
         pass
-
-
-
-
-
-# # project root = One dir back from the dir this file is in
-# project_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-# main_config = helpers.getConfig()
-# all_tests = helpers.loadTestsFromDirectory(project_root, recurse=True)
-
-# # For each item in the list, run it though the suite:
-# @pytest.mark.parametrize("test", all_tests)
-# def test_main(test, cli_args):
-#     test_info = test[0] # That test's info
-#     file_conf = test[1] # Any extra info in that test's yml
-#     # Basic error reporting, for when a test fails:
-#     error_msg = "\nTitle: '{0}'".format(test_info["title"]) + "\nFile: '{0}'\n".format(file_conf["yml name"])
-
-#     # Skip the test if needed:
-#     helpers.skipTestsIfNecessary(test_info["title"], file_conf["yml name"], cli_args)
-
-#     # pass the values to the right function:
-#     found_test = False
-#     for conf in main_config["test_types"]:
-        
-#         ## BEGIN normal test_type parsing:
-
-#         # If you declare it, make sure the keys are within that test.
-#         if "required_keys" not in conf or set(conf["required_keys"]).issubset(test_info):
-#             passed_key_check = True
-#         else:
-#             passed_key_check = False
-
-#         # If all the tests in a file, belong to a test type:
-#         if "required_files" not in conf or file_conf["yml name"] in conf["required_files"]:
-#             passed_file_check = True
-#         else:
-#             passed_file_check = False
-
-#         # Run the test, if all the checks agree:
-#         # (I broke this out seperatly, to add more later easily, and to allow you to use more than one at once)
-#         if passed_key_check and passed_file_check:
-#             found_test = True
-#             ## Check if the tester want's to run/exclude a specific *type* of test:
-#             # (Can't do this any sooner, needs to make sure the for-loop is on your test-type)
-#             if cli_args["only run type"] != None:
-#                 title_hit_in_list = False
-#                 for only_run_each in cli_args["only run type"]:
-#                     if only_run_each.lower() in conf["title"].lower():
-#                         title_hit_in_list = True
-#                         break
-#                 if not title_hit_in_list:
-#                     pytest.skip("Type of test did not contain --only-run-type param (case insensitive)")
-#             # Same, but reversed for 'dont run':
-#             if cli_args["dont run type"] != None:
-#                 for dont_run_each in cli_args["dont run type"]:
-#                     if dont_run_each.lower() in conf["title"].lower():
-#                         pytest.skip("Type of test contained --dont-run-type param (case insensitive)")
-            
-#             ## Run the test:
-#             conf["method_pointer"](test_info, deepcopy(file_conf), deepcopy(cli_args), deepcopy(conf["variables"]))
-#             break
-#     assert found_test, "Could not find what test this block belongs to. {0}".format(error_msg)
-
-## Custom CLI options: 
-def pytest_addoption(parser):
-    group = parser.getgroup('PytestAuto')
-    group.addoption("--api", action="store", default=None,
-        help = "Override which api ALL .yml tests use with this. (DEV/TEST/PROD, or url).")
-    group.addoption("--only-run-name", "--on", action="append", default=None,
-        help = "Only run tests that contains this param in their name.")
-    group.addoption("--dont-run-name", "--dn", action="append", default=None,
-        help = "Dont run tests that contains this param in their name.")
-    group.addoption("--only-run-file", "--of", action="append", default=None,
-        help = "Only run files that contain this in their name.")
-    group.addoption("--dont-run-file", "--df", action="append", default=None,
-        help = "Dont run files that contain this in their name.")
-    group.addoption("--only-run-type", "--ot", action="append", default=None,
-        help = "Only run files that contain this in their name.")
-    group.addoption("--dont-run-type", "--dt", action="append", default=None,
-        help = "Dont run files that contain this in their name.")
-    group.addoption("--skip-all", action="store_true",
-        help = "Skips ALL the tests. (Added for pipeline use).")
 
