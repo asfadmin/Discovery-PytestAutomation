@@ -1,4 +1,3 @@
-from . import auto as helpers
 import os
 import sys
 import pytest
@@ -6,7 +5,6 @@ import glob
 import yaml
 import re
 import importlib
-from  copy import deepcopy
 import warnings
 
 PYTEST_CONFIG_INFO = {}
