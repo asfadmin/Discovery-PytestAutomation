@@ -70,8 +70,10 @@ def seperateKeyVal(mydict: dict, file: str):
     num_test_titles = len(list(mydict.keys()))
     assert num_test_titles == 1, "MISFORMATTED TEST: {0} keys found in a test. Only have 1, the title of the test. File: {1}".format(num_test_titles, file)
     # return the individual key/val
-    name, json_info = next(iter( mydict.items() ))
-    return name, json_info
+    title, test_info = next(iter( mydict.items() ))
+    # Save title to test_info. (Might seem reduntant, but this gets all test_info keys at base level, AND still saves the test title)
+    test_info["title"] = title
+    return test_info
 
 def getPytestManagerModule(pytest_managers_path: str):
     # Add the path to PYTHONPATH, so you can import pytest_managers:
@@ -86,6 +88,7 @@ def getPytestManagerModule(pytest_managers_path: str):
     return pytest_managers_module
 
 def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
+    ## TODO: Look into factoring this to a single method, called three times \/
     # If they want to skip EVERYTHING:
     if cli_config.getoption("--skip-all"):
         pytest.skip("Skipping ALL tests. (--skip-all cli arg was found).")
@@ -130,6 +133,26 @@ def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
             if dont_run_filter.lower() in file_name.lower():
                 pytest.skip("Name of file contained --dont-run-file param (case insensitive)")
 
+    ### ONLY/DONT RUN TYPE:
+    # If they only want to run something, based on the test type:
+    if cli_config.getoption("--only-run-type") != None:
+        # If you match with ANY of the values passed to "--only-run-type":
+        found_in_type = False
+        for only_run_filter in cli_config.getoption("--only-run-type"):
+            if only_run_filter.lower() in test_type.lower():
+                # Found it!
+                found_in_type = True
+                break
+        # Check if you found it. If you didn't, skip the test:
+        if not found_in_type:
+            pytest.skip("Test type did not did not contain --only-run-type param (case insensitive)")
+    # If they DONT want to run something, based on test type:
+    if cli_config.getoption("--dont-run-type") != None:
+        # Nice thing here is, you can skip the second you find it:
+        for dont_run_filter in cli_config.getoption("--dont-run-type"):
+            if dont_run_filter.lower() in test_type.lower():
+                pytest.skip("Test type contained --dont-run-file param (case insensitive)")
+
 
 ## Validates both pytest_managers.py and pytest_config.py, then loads their methods
 # and stores pointers in a dict, for tests to run from.
@@ -146,7 +169,7 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
 
     # Time to load the tests inside the config:
     for ii, test_config in enumerate(list_of_tests):
-        title, test_info = seperateKeyVal(test_config, "pytest_config.yml")
+        test_info = seperateKeyVal(test_config, "pytest_config.yml")
 
         # If "required_keys" or "required_files" field contain one item, turn into list of that one item:
         if "required_keys" in test_info and not isinstance(test_info["required_keys"], type([])):
@@ -155,7 +178,7 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
             test_info["required_files"] = [test_info["required_files"]]
 
         # Make sure test_info has required keys:
-        assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest_config.yml)".format(title)
+        assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest_config.yml)".format(test_info["title"])
 
         # Import the method inside the module:
         try:
@@ -294,16 +317,13 @@ def pytest_addoption(parser):
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
 def pytest_collect_file(parent, path):
     if path.ext in [".yml", ".yaml"] and path.basename.startswith("test_"):
-        return YamlFile.from_parent(parent, fspath=path, test="asdf")
+        return YamlFile.from_parent(parent, fspath=path)
 
 class YamlFile(pytest.File):
-    def __init__(self, parent, fspath, test):
-        super().__init__(parent=parent, fspath=fspath)
-        self.path = fspath
-        self.test = test
+    ## Default init used. Declared: self.parent, self.fspath
 
     def get_name(self):
-        return os.path.basename(self.path)
+        return os.path.basename(self.fspath)
 
     def collect(self):
         data = yaml.safe_load(self.fspath.open())
@@ -314,22 +334,48 @@ class YamlFile(pytest.File):
             return
 
         for json_test in data["tests"]:
-            name, json_info = seperateKeyVal(json_test, self.fspath)
-            yield YamlItem.from_parent(self, name=name, test_info=json_info)
+            test_info = seperateKeyVal(json_test, self.fspath)
+            yield YamlItem.from_parent(self, test_info=test_info)
 
 class YamlItem(pytest.Item):
 
-    def __init__(self, name, parent, test_info):
-        super().__init__(name, parent)
-        self.test_name = name
+    def __init__(self, parent, test_info):
+        super().__init__(test_info["title"], parent)
         self.file_name = parent.get_name()
         self.test_info = test_info
-    
+
     def runtest(self):
-        # TODO: Loop through, and find out what test type to use here <---
+        # Look for the right config to run off of:
+        found_test = False
+        for poss_test_type in PYTEST_CONFIG_INFO["test_types"]:
+            # *IF* required_keys are declared, make sure the test only runs if THOSE keys are inside the test info:
+            passed_key_check = True if "required_keys" not in poss_test_type or set(poss_test_type["required_keys"]).issubset(self.test_info) else False
+            # *IF* required_files are declared, make sure only those files are ran:
+            passed_file_check = True if "required_files" not in poss_test_type or self.file_name in poss_test_type["required_files"] else False
 
-        skipTestsIfNecessary(cli_config=self.config, test_name=self.test_name, file_name=self.file_name, test_type="TODO")
+            # If you pass both filters, congrats! You can run the test:
+            if passed_key_check and passed_file_check:
+                found_test = True
+                skipTestsIfNecessary(cli_config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=poss_test_type["title"])
 
-        # TODO: Actually run the test here <-------------------------
-        pass
+                # poss_test_type["method_pointer"](self.test_info, self.config, poss_test_type["variables"])
+                # Need to pass in: config, test_info, test_type_vars
+                # Old args passed in: test_info, file_conf, cli_args, test_type_vars
+                # (Put "file_info" inside test_info? Maybe under it's own "file_info" key?)
 
+                # You're done. Don't check ALL test types, only the FIRST match
+                break
+        assert found_test, "TEST TYPE NOT FOUND: Could not find which manager to use with this test."
+
+    def repr_failure(self, excinfo):
+        """Called when self.runtest() raises an exception."""
+        # if isinstance(excinfo.value, yaml.YamlException):
+        return "\n".join(
+            [
+                "Test failed",
+                "   Message: {0}: {1}".format(excinfo.type.__name__, excinfo.value),
+                "   Test: '{0}'".format(self.test_info["title"]),
+                "   File: '{0}'".format(self.file_name),
+                "   Traceback: {0}".format(excinfo.traceback[-1:][0])
+            ]
+        )
