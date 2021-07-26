@@ -367,15 +367,15 @@ class YamlItem(pytest.Item):
                 break
         assert found_test, "TEST TYPE NOT FOUND: Could not find which manager to use with this test."
 
-    def repr_failure(self, excinfo):
-        """Called when self.runtest() raises an exception."""
-        # if isinstance(excinfo.value, yaml.YamlException):
-        return "\n".join(
-            [
-                "Test failed",
-                "   Message: {0}: {1}".format(excinfo.type.__name__, excinfo.value),
-                "   Test: '{0}'".format(self.test_info["title"]),
-                "   File: '{0}'".format(self.file_name),
-                "   Traceback: {0}".format(excinfo.traceback[-1:][0])
-            ]
-        )
+    # def repr_failure(self, excinfo):
+    #     """Called when self.runtest() raises an exception."""
+    #     return "\n".join(
+    #         [
+    #             "Test failed",
+    #             "   Message: {0}:".format(excinfo.value)# {1}".format(excinfo.type.__name__, excinfo.value)
+    #             # "   Test: '{0}'".format(self.test_info["title"]),
+    #             # "   File: '{0}'".format(self.file_name)
+    #             # "   Traceback: {0}".format(excinfo.tb),
+    #             # "   Traceback: {0}".format(excinfo.traceback[-1:][0])
+    #         ]
+    #     )
