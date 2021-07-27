@@ -3,8 +3,7 @@ import subprocess
 
 # Get the version from git and save it:
 package_version = subprocess.run(['git', 'describe', '--tags'], stdout=subprocess.PIPE).stdout.decode("utf-8").strip()
-print("HITTTT")
-print(package_version)
+
 if "." not in package_version:
     package_version = "0.0.0"
 
