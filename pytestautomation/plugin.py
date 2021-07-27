@@ -194,59 +194,6 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
     return { "test_types": list_of_tests }
 
 
-def loadTestHooks(pytest_managers_path: str, pytest_config_path: str):
-    pytest_config_info = loadYamlFile(pytest_config_path, required=True)
-    pytest_managers_module = getPytestManagerModule(pytest_managers_path)
-
-    # Load the hooks, if they exist:
-    if "test_hooks" not in pytest_config_info:
-        return { "test_hooks": {} }
-
-    # Make sure it's formated correctly:
-    test_hooks_info = pytest_config_info["test_hooks"]
-    assert isinstance(test_hooks_info, type({})), "CONFIG ERROR: Inside 'pytest_config.yml', 'test_hooks' must contain a DICT of wanted hooks. (Currently type '{0}'.)".format(type(test_hooks_info))
-
-    ### HOOKS FOR TEST SUITE:
-    # If trying to do something before the test suite:
-    if "before_suites" in test_hooks_info:
-        try:
-            test_hooks_info["before_suites_pointer"] = getattr(pytest_managers_module, test_hooks_info["before_suites"])
-        except AttributeError:
-                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(test_hooks_info["before_suites"], pytest_managers_module)
-    # If trying to do something after the test suite:
-    if "after_suites" in test_hooks_info:
-        try:
-            test_hooks_info["after_suites_pointer"] = getattr(pytest_managers_module, test_hooks_info["after_suites"])
-        except AttributeError:
-                assert False, "IMPORT ERROR: '{0}' not found in '{1}'.".format(test_hooks_info["after_suites"], pytest_managers_module)    
-    return { "test_hooks": test_hooks_info }
-
-def loadAddCliOptions(pytest_managers_path: str, pytest_config_path: str):
-    pytest_config_info = loadYamlFile(pytest_config_path, required=True)
-    pytest_managers_module = getPytestManagerModule(pytest_managers_path)
-
-    # Start parsing the extra options, if they exist:
-    if "add_cli_options" not in pytest_config_info:
-        return { "add_cli_options": {} }
-
-    # Make sure it's formated correctly:
-    add_cli_options_info = pytest_config_info["add_cli_options"]
-    assert isinstance(add_cli_options_info, type([])), "CONFIG ERROR: Inside 'pytest_config.yml', 'add_cli_options' must contain a LIST of wanted hooks. (Currently type '{0}'.)".format(type(add_cli_options_info))
-
-    #############################
-    # TODO: PLACEHOLDER While I finish this section
-    # Note, maybe this is not needed? Look what happens if searchAPI has
-    # It's own conftest.py that adds options. Maybe it'll pull it correctly still
-    return { "add_cli_options": {} }
-    #############################
-
-    # NOTE for checking if type == str, or custom function:
-    # Use https://stackoverflow.com/questions/38171243/python-check-for-class-existance
-    try:
-        var = file_type() # This won't throw if it's "str" or something
-    except NameError:
-        # Now try to load it from pytest_managers.py
-        pass
 
 ####################################
 
@@ -258,29 +205,12 @@ def pytest_sessionstart(session):
 
     # Load info from said core files:
     # (Format of returned dicts is still {"main_key": {ALL_KEY_VALS_HERE}}, so different
-    #   "load*" methods don't conflict with one anther. i.e. test_hooks == {"test_hooks": {ALL_ACTUALL_INFO_HERE}})
+    #   "load*" methods don't conflict with one anther. i.e. test_types == {"test_types": {ALL_ACTUALL_INFO_HERE}})
     test_types_info = loadTestTypes(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
-    test_hooks_info = loadTestHooks(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
     
     # Save info to a global, to use with each test:
     global PYTEST_CONFIG_INFO
     PYTEST_CONFIG_INFO.update(test_types_info)
-    PYTEST_CONFIG_INFO.update(test_hooks_info)
-
-    ## If hook is defined in pytest_config.yml, run it here.
-    if "before_suites" in PYTEST_CONFIG_INFO["test_hooks"]:
-        PYTEST_CONFIG_INFO["test_hooks"]["before_suites_pointer"](session)
-
-
-# Runs once when the entire suite finishes:
-def pytest_sessionfinish(session, exitstatus):
-    if "after_suites" in PYTEST_CONFIG_INFO["test_hooks"]:
-        # Try first with passing the exitstatus, then w/out:
-        #      (Makes exitstatus an optional param)
-        try:
-            PYTEST_CONFIG_INFO["test_hooks"]["after_suites"](session, exitstatus)
-        except TypeError:
-            PYTEST_CONFIG_INFO["test_hooks"]["after_suites"](session)
 
 ## Custom CLI options: 
 def pytest_addoption(parser):
@@ -299,18 +229,6 @@ def pytest_addoption(parser):
         help = "Dont run test types that contain this in their name.")
     group.addoption("--skip-all", action="store_true",
         help = "Skips ALL the tests. (Added for pipeline use).")
-
-    ## START Looking if any are declared in the config:
-    ## (MAYBE not needed, see how conftest works when inside SearchAPI)
-    # Figure out where core files are in project
-    pytest_config_path = get_file_from_name("pytest_config.yml")
-    pytest_managers_path = get_file_from_name("pytest_managers.py")
-    add_cli_options_info = loadAddCliOptions(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
-
-    # if "add_cli_options" in PYTEST_CONFIG_INFO:
-    #     print("HITTTTT")
-    # group.addoption("--api", action="store", default=None,
-    #     help = "Override which api ALL .yml tests use with this. (DEV/TEST/PROD, or url).")
 
 
 

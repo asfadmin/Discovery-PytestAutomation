@@ -46,20 +46,6 @@ test_types:
 
 - Neither required_keys or required_files are "required" to be in a test block. If you have neither, then EVERY test that makes it that far will run with that method, and no tests will continue to the test types after it. Likewise, if BOTH are in a block, then they BOTH must hold true to run the test.
 
-Pre/post hooks:
-
-(WARNING: This might get removed soon, since you can have a conftest.py with pytest_sessionstart and pytest_sessionfinish. Use at your own risk for now)
-
-For running a method before/after the **entire** suite, you can add the following to pytest_config.yml:
-
-```yaml
-test_hooks:
-  before_suites: pytest_start
-  after_suites: pytest_end
-```
-
-This will search pytest_managers.py for a method 'pytest_start' when the suite kicks up, and runs it. Dito for after_suites, but after everything finishes. The after_suites method accepts an optional positional parameter that's the exit code of the run.
-
 - ### pytest_managers.py:
 
 Contains the code that gets executed, for each individual yml test. 
