@@ -1,216 +1,26 @@
-import os
-import sys
-import pytest
-import glob
-import yaml
-import re
-import importlib
+import os # path
+import pytest # File, Item
+import yaml # safe_load
 import warnings
 
-PYTEST_CONFIG_INFO = {}
+from .helpers import getFileFromName, loadTestTypes, loadYamlFile, seperateKeyVal, skipTestsIfNecessary
 
-#### REWRITTING CURRENT HELPERS ####
-
-def remove_submodule_paths(paths: list) -> list:
-    submodule_path = os.path.join(os.getcwd(), ".gitmodules")
-    # If there are no submodules, nothing to do
-    if not os.path.isfile(submodule_path):
-        return paths
-    # Append path to valid_paths that don't contain a sub-repo
-    valid_paths = []
-    f = open(submodule_path, "r")
-    submodules = re.findall(r"path = (.*)", f.read())
-    for path in paths:
-        # If any of the path parts name don't match a submodule repo, add it:
-        if len([directory for directory in path.split('/') if directory in submodules]) == 0:
-            valid_paths.append(path)
-    return valid_paths        
-
-def get_file_from_name(name: str) -> str:
-    # From your current dir, find all the files with this name:
-    recursive_path = os.path.abspath(os.path.join(os.getcwd(), "**", name))
-    possible_paths = glob.glob(recursive_path, recursive=True)
-    # If any are in a sub-repo/submodule, ignore it. (They might have their *own* config):
-    possible_paths = remove_submodule_paths(possible_paths)
-    # Make sure you got only found one config:
-    assert len(possible_paths) == 1, "WRONG NUMBER OF CONFIGS: Must have exactly one '{0}' file inside project. Found {1} instead.\nBase path used to find files: {2}.".format(name, len(possible_paths), recursive_path)
-    return possible_paths[0]
-
-## Open yml/yaml File:
-#    Opens it and returns contents, or None if problems happen
-#    (Or throw if problems happen, if required == True)
-def loadYamlFile(path: str, required: bool=False):
-    path = os.path.abspath(path)
-    if not os.path.isfile(path):
-        error_msg = "YAML ERROR: File not found: '{0}'.".format(path)
-        # Throw if this is required to work, or warn otherwise
-        assert not required, error_msg
-        warnings.warn(UserWarning(error_msg))
-        return None
-    with open(path, "r") as yaml_file:
-        try:
-            yaml_dict = yaml.safe_load(yaml_file)
-        except yaml.YAMLError as e:
-            error_msg = "YAML ERROR: Couldn't read file: '{0}'. Error '{1}'.".format(path, str(e))
-            # Throw if this is required to work, or warn otherwise
-            assert not required, error_msg
-            warnings.warn(UserWarning(error_msg))
-            return None
-    if yaml_dict == None:
-        error_msg = "YAML ERROR: File is empty: '{0}'.".format(path)
-        # Throw if this is required to work, or warn otherwise
-        assert not required, error_msg
-        warnings.warn(UserWarning(error_msg))
-    return yaml_dict
-
-## Given "key: val", returns key, val:
-#    Usefull with "title: {test dict}" senarios
-#    file to report error if something's not formated
-def seperateKeyVal(mydict: dict, file: str):
-    num_test_titles = len(list(mydict.keys()))
-    assert num_test_titles == 1, "MISFORMATTED TEST: {0} keys found in a test. Only have 1, the title of the test. File: {1}".format(num_test_titles, file)
-    # return the individual key/val
-    title, test_info = next(iter( mydict.items() ))
-    # Save title to test_info. (Might seem reduntant, but this gets all test_info keys at base level, AND still saves the test title)
-    test_info["title"] = title
-    return test_info
-
-def getPytestManagerModule(pytest_managers_path: str):
-    # Add the path to PYTHONPATH, so you can import pytest_managers:
-    sys.path.append(os.path.dirname(pytest_managers_path))
-    try:
-        # Actually import pytest_managers now:
-        pytest_managers_module = importlib.import_module("pytest_managers")
-    except ImportError as e:
-        assert False, "IMPORT ERROR: Problem importing '{0}'. Error '{1}'.".format(pytest_managers_path, str(e))
-    # Done with the import, cleanup your path:
-    sys.path.remove(os.path.dirname(pytest_managers_path))
-    return pytest_managers_module
-
-def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
-    ## TODO: Look into factoring this to a single method, called three times \/
-    # If they want to skip EVERYTHING:
-    if cli_config.getoption("--skip-all"):
-        pytest.skip("Skipping ALL tests. (--skip-all cli arg was found).")
-    
-    ### ONLY/DONT RUN NAME:
-    # If they only want to run something, based on the test title:
-    if cli_config.getoption("--only-run-name") != None:
-        # If you match with ANY of the values passed to "--only-run-name":
-        found_in_title = False
-        for only_run_filter in cli_config.getoption("--only-run-name"):
-            if only_run_filter.lower() in test_name.lower():
-                # Found it!
-                found_in_title = True
-                break
-        # Check if you found it. If you didn't, skip the test:
-        if not found_in_title:
-            pytest.skip("Title of test did not contain --only-run-name param (case insensitive)")
-    # If they DONT want to run something, based on test title:
-    if cli_config.getoption("--dont-run-name") != None:
-        # Nice thing here is, you can skip the second you find it:
-        for dont_run_filter in cli_config.getoption("--dont-run-name"):
-            if dont_run_filter.lower() in test_name.lower():
-                pytest.skip("Title of test contained --dont-run-name param (case insensitive)")
-    
-    ### ONLY/DONT RUN FILE:
-    # If they only want to run something, based on the file name:
-    if cli_config.getoption("--only-run-file") != None:
-        # If you match with ANY of the values passed to "--only-run-file":
-        found_in_file = False
-        for only_run_filter in cli_config.getoption("--only-run-file"):
-            if only_run_filter.lower() in file_name.lower():
-                # Found it!
-                found_in_file = True
-                break
-        # Check if you found it. If you didn't, skip the test:
-        if not found_in_file:
-            pytest.skip("Name of file did not contain --only-run-file param (case insensitive)")
-    # If they DONT want to run something, based on file name:
-    if cli_config.getoption("--dont-run-file") != None:
-        # Nice thing here is, you can skip the second you find it:
-        for dont_run_filter in cli_config.getoption("--dont-run-file"):
-            if dont_run_filter.lower() in file_name.lower():
-                pytest.skip("Name of file contained --dont-run-file param (case insensitive)")
-
-    ### ONLY/DONT RUN TYPE:
-    # If they only want to run something, based on the test type:
-    if cli_config.getoption("--only-run-type") != None:
-        # If you match with ANY of the values passed to "--only-run-type":
-        found_in_type = False
-        for only_run_filter in cli_config.getoption("--only-run-type"):
-            if only_run_filter.lower() in test_type.lower():
-                # Found it!
-                found_in_type = True
-                break
-        # Check if you found it. If you didn't, skip the test:
-        if not found_in_type:
-            pytest.skip("Test type did not did not contain --only-run-type param (case insensitive)")
-    # If they DONT want to run something, based on test type:
-    if cli_config.getoption("--dont-run-type") != None:
-        # Nice thing here is, you can skip the second you find it:
-        for dont_run_filter in cli_config.getoption("--dont-run-type"):
-            if dont_run_filter.lower() in test_type.lower():
-                pytest.skip("Test type contained --dont-run-file param (case insensitive)")
+PYTEST_CONFIG_INFO = None
 
 
-## Validates both pytest_managers.py and pytest_config.py, then loads their methods
-# and stores pointers in a dict, for tests to run from.
-def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
-    ## Load those methods, import what's needed. Save as global (to load in each YamlItem)
-    pytest_config_info = loadYamlFile(pytest_config_path, required=True)
-
-    assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest_config.yml'."
-    assert isinstance(pytest_config_info["test_types"], type([])), "CONFIG ERROR: 'test_types' must be a list inside 'pytest_config.yml'. (Currently type '{0}').".format(type(pytest_config_info["test_types"]))
-
-    list_of_tests = pytest_config_info["test_types"]
-
-    pytest_managers_module = getPytestManagerModule(pytest_managers_path)
-
-    # Time to load the tests inside the config:
-    for ii, test_config in enumerate(list_of_tests):
-        test_info = seperateKeyVal(test_config, "pytest_config.yml")
-
-        # If "required_keys" or "required_files" field contain one item, turn into list of that one item:
-        if "required_keys" in test_info and not isinstance(test_info["required_keys"], type([])):
-            test_info["required_keys"] = [test_info["required_keys"]]
-        if "required_files" in test_info and not isinstance(test_info["required_files"], type([])):
-            test_info["required_files"] = [test_info["required_files"]]
-
-        # Make sure test_info has required keys:
-        assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest_config.yml)".format(test_info["title"])
-
-        # Import the method inside the module:
-        try:
-            # This makes it so you can write test_info["method_pointer"](args) to actually call the method:
-            test_info["method_pointer"] = getattr(pytest_managers_module, test_info["method"])
-        except AttributeError:
-            assert False, "IMPORT ERROR: '{0}' not found in 'pytest_managers.py'.\nTried loading from: {1}.\n".format(test_info["method"], pytest_managers_module.__file__)
-        # Just a guarantee this field is declared, to pass into functions:
-        if "variables" not in test_info:
-            test_info["variables"] = None
-        # Save it:
-        list_of_tests[ii] = test_info
-    return { "test_types": list_of_tests }
-
-
-
-####################################
 
 # Runs once at the start of everything:
 def pytest_sessionstart(session):
     # Figure out where core files are in project
-    pytest_config_path = get_file_from_name("pytest_config.yml")
-    pytest_managers_path = get_file_from_name("pytest_managers.py")
+    pytest_config_path = getFileFromName("pytest_config.yml")
+    pytest_managers_path = getFileFromName("pytest_managers.py")
 
     # Load info from said core files:
-    # (Format of returned dicts is still {"main_key": {ALL_KEY_VALS_HERE}}, so different
-    #   "load*" methods don't conflict with one anther. i.e. test_types == {"test_types": {ALL_ACTUALL_INFO_HERE}})
     test_types_info = loadTestTypes(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
     
     # Save info to a global, to use with each test:
     global PYTEST_CONFIG_INFO
-    PYTEST_CONFIG_INFO.update(test_types_info)
+    PYTEST_CONFIG_INFO = test_types_info
 
 ## Custom CLI options: 
 def pytest_addoption(parser):
@@ -230,8 +40,6 @@ def pytest_addoption(parser):
     group.addoption("--skip-all", action="store_true",
         help = "Skips ALL the tests. (Added for pipeline use).")
 
-
-
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
 def pytest_collect_file(parent, path):
     if path.ext in [".yml", ".yaml"] and path.basename.startswith("test_"):
@@ -244,11 +52,11 @@ class YamlFile(pytest.File):
         return os.path.basename(self.fspath)
 
     def collect(self):
-        data = yaml.safe_load(self.fspath.open())
+        data = loadYamlFile(self.fspath, required=False)
 
-        # Make sure you can load it, and it has tests:
-        if data is None or "tests" not in data:
-            warnings.warn(UserWarning("Unable to load tests from file: '{0}'.".format(self.fspath)))
+        # Make sure it has tests:
+        if "tests" not in data:
+            warnings.warn(UserWarning("File is missing 'tests' key, skipping: '{0}'.".format(self.fspath)))
             return
 
         for json_test in data["tests"]:
