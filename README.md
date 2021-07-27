@@ -84,3 +84,4 @@ pytest <pytest args here> . <custom args here>
     - '--only-run-name, --dont-run-name' (--on/--dn) => (Can use multiple times) Looks at the name of each test to determine if it needs to run.
     - '--only-run-file', '--dont-run-file' (--of/--df) => (Can use multiple times) Determines if ALL tests in a file gets skipped, based on name of file. (Full name of file, but *not* the path).
     - '--only-run-type', '--dont-run-type' (--ot/--dt) => (Can use multiple times) Looks at the title in pytest_config.yml. Tries to see if what is passed to these, is within the title.
+
