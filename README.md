@@ -69,7 +69,7 @@ NOTE: Looking on if there's an optional way to pass in params now! Come back and
 
 - test_info: A dict, containing all the contents of the yml test. The title of the test gets moved into the test, under the key 'title'.
 
-- file_conf: (DEPRECATED!!!) If the yml file holding the tests has contents outside of the 'tests' block, They'll get added here ONLY for the tests inside that file.
+- file_conf: (DEPRECATED!!! Maybe...) If the yml file holding the tests has contents outside of the 'tests' block, They'll get added here ONLY for the tests inside that file.
 
 - cli_args: Holds what commands are used when running tests. (--only-run, --dont-run, etc. are here too, but I already skip the tests if those are used, before these methods are called).
 
