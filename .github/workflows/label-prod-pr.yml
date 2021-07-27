@@ -22,4 +22,4 @@ jobs:
         with:
           mode: exactly
           count: 1
-          labels: "major, minor, patch, skip-release" 
+          labels: "major, minor, patch, skip-release"
