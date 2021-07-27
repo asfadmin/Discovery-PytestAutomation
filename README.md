@@ -1,5 +1,7 @@
 # Pytest Automation
 
+[![image](https://img.shields.io/pypi/v/pytest-automation.svg)](https://pypi.python.org/pypi/pytest-automation)
+
 ### Add to an existing project:
 1) Add this repo as a submodule, in the root of your project:
 ```bash
