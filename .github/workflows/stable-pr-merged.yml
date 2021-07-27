@@ -20,10 +20,6 @@ jobs:
         contains(github.event.pull_request.labels.*.name, 'major')
       )
     steps:
-      - name: debug info
-        run: |
-          echo "PR: ${GITHUB_REF}"
-          echo "Branch: ${{ github.base_ref }}"
       - uses: actions/checkout@v2
 
       - name: Save version type
