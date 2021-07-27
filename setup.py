@@ -23,6 +23,7 @@ setuptools.setup(
     # custom PyPI classifier for pytest plugins
     classifiers=["Framework :: Pytest"],
     install_requires=[
+        'pytest',
         'PyYAML'
     ]
 )
