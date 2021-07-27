@@ -53,7 +53,7 @@ def loadYamlFile(path: str, required: bool=False):
             assert not required, error_msg
             warnings.warn(UserWarning(error_msg))
             return None
-    if yaml_dict == None:
+    if yaml_dict is None:
         error_msg = "YAML ERROR: File is empty: '{0}'.".format(path)
         # Throw if this is required to work, or warn otherwise
         assert not required, error_msg
@@ -91,7 +91,7 @@ def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
     
     ### ONLY/DONT RUN NAME:
     # If they only want to run something, based on the test title:
-    if cli_config.getoption("--only-run-name") != None:
+    if cli_config.getoption("--only-run-name") is not None:
         # If you match with ANY of the values passed to "--only-run-name":
         found_in_title = False
         for only_run_filter in cli_config.getoption("--only-run-name"):
@@ -103,7 +103,7 @@ def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
         if not found_in_title:
             pytest.skip("Title of test did not contain --only-run-name param (case insensitive)")
     # If they DONT want to run something, based on test title:
-    if cli_config.getoption("--dont-run-name") != None:
+    if cli_config.getoption("--dont-run-name") is not None:
         # Nice thing here is, you can skip the second you find it:
         for dont_run_filter in cli_config.getoption("--dont-run-name"):
             if dont_run_filter.lower() in test_name.lower():
@@ -111,7 +111,7 @@ def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
     
     ### ONLY/DONT RUN FILE:
     # If they only want to run something, based on the file name:
-    if cli_config.getoption("--only-run-file") != None:
+    if cli_config.getoption("--only-run-file") is not None:
         # If you match with ANY of the values passed to "--only-run-file":
         found_in_file = False
         for only_run_filter in cli_config.getoption("--only-run-file"):
@@ -123,7 +123,7 @@ def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
         if not found_in_file:
             pytest.skip("Name of file did not contain --only-run-file param (case insensitive)")
     # If they DONT want to run something, based on file name:
-    if cli_config.getoption("--dont-run-file") != None:
+    if cli_config.getoption("--dont-run-file") is not None:
         # Nice thing here is, you can skip the second you find it:
         for dont_run_filter in cli_config.getoption("--dont-run-file"):
             if dont_run_filter.lower() in file_name.lower():
@@ -131,7 +131,7 @@ def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
 
     ### ONLY/DONT RUN TYPE:
     # If they only want to run something, based on the test type:
-    if cli_config.getoption("--only-run-type") != None:
+    if cli_config.getoption("--only-run-type") is not None:
         # If you match with ANY of the values passed to "--only-run-type":
         found_in_type = False
         for only_run_filter in cli_config.getoption("--only-run-type"):
@@ -143,7 +143,7 @@ def skipTestsIfNecessary(cli_config, test_name, file_name, test_type):
         if not found_in_type:
             pytest.skip("Test type did not did not contain --only-run-type param (case insensitive)")
     # If they DONT want to run something, based on test type:
-    if cli_config.getoption("--dont-run-type") != None:
+    if cli_config.getoption("--dont-run-type") is not None:
         # Nice thing here is, you can skip the second you find it:
         for dont_run_filter in cli_config.getoption("--dont-run-type"):
             if dont_run_filter.lower() in test_type.lower():
