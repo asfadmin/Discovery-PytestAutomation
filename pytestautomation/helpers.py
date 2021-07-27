@@ -172,6 +172,9 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
             test_info["required_keys"] = [test_info["required_keys"]]
         if "required_files" in test_info and not isinstance(test_info["required_files"], type([])):
             test_info["required_files"] = [test_info["required_files"]]
+        # If neither are used, AND you have tests after this one, warn that those tests can't be reached:
+        if "required_keys" not in test_info and "required_files" not in test_info and ii < (len(list_of_tests)-1):
+            warnings.warn(UserWarning("Test type found without required_keys AND required_files used, but there are test types after this one. Tests can't pass '{0}' and run on those.".format(test_info["title"])))
 
         # Make sure test_info has required keys:
         assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest_config.yml)".format(test_info["title"])
