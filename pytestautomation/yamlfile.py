@@ -49,12 +49,13 @@ class YamlItem(pytest.Item):
             # If you pass both filters, congrats! You can run the test:
             if passed_key_check and passed_file_check:
                 found_test = True
-                skipTestsIfNecessary(cli_config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=poss_test_type["title"])
+                skipTestsIfNecessary(config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=poss_test_type["title"])
                 # Run the test!!!
+                # TODO: Add fixture support somehow: https://stackoverflow.com/questions/44959124/is-there-way-to-directly-reference-to-a-pytest-fixture-from-a-simple-non-test
                 poss_test_type["method_pointer"](test_info=self.test_info, config=self.config, test_type_vars=poss_test_type["variables"])
                 # You're done. Don't check ALL test types, only the FIRST match
                 break
-        assert found_test, "TEST TYPE NOT FOUND: Could not find which manager to use with this test."
+        assert found_test, "TEST TYPE NOT FOUND: Could not find which 'test types' element in pytest_config.yml to use with this test."
 
     def repr_failure(self, excinfo):
         """Called when self.runtest() raises an exception."""
