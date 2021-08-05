@@ -49,26 +49,26 @@ class YamlItem(pytest.Item):
             # If you pass both filters, congrats! You can run the test:
             if passed_key_check and passed_file_check:
                 found_test = True
-                skipTestsIfNecessary(cli_config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=poss_test_type["title"])
-
-                # poss_test_type["method_pointer"](self.test_info, self.config, poss_test_type["variables"])
-                # Need to pass in: config, test_info, test_type_vars
-                # Old args passed in: test_info, file_conf, cli_args, test_type_vars
-                # (Put "file_info" inside test_info? Maybe under it's own "file_info" key?)
-
+                skipTestsIfNecessary(config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=poss_test_type["title"])
+                # Run the test!!!
+                # TODO: Add fixture support somehow: https://stackoverflow.com/questions/44959124/is-there-way-to-directly-reference-to-a-pytest-fixture-from-a-simple-non-test
+                poss_test_type["method_pointer"](test_info=self.test_info, config=self.config, test_type_vars=poss_test_type["variables"])
                 # You're done. Don't check ALL test types, only the FIRST match
                 break
-        assert found_test, "TEST TYPE NOT FOUND: Could not find which manager to use with this test."
+        assert found_test, "TEST TYPE NOT FOUND: Could not find which 'test types' element in pytest_config.yml to use with this test."
 
-    # def repr_failure(self, excinfo):
-    #     """Called when self.runtest() raises an exception."""
-    #     return "\n".join(
-    #         [
-    #             "Test failed",
-    #             "   Message: {0}:".format(excinfo.value)# {1}".format(excinfo.type.__name__, excinfo.value)
-    #             # "   Test: '{0}'".format(self.test_info["title"]),
-    #             # "   File: '{0}'".format(self.file_name)
-    #             # "   Traceback: {0}".format(excinfo.tb),
-    #             # "   Traceback: {0}".format(excinfo.traceback[-1:][0])
-    #         ]
-    #     )
+    def repr_failure(self, excinfo):
+        """Called when self.runtest() raises an exception."""
+        # Use built in cli arg:
+        tbstyle = self.config.getoption("tbstyle", "auto")
+        # Return the error message for the test:
+        return "\n"+"\n".join(
+            [
+                "Test failed",
+                str(self._repr_failure_py(excinfo, style=tbstyle)),
+                "   Test: '{0}'".format(self.test_info["title"]),
+                "   File: '{0}'".format(self.file_name),
+            ]
+        # Default method: https://docs.pytest.org/en/6.2.x/_modules/_pytest/nodes.html#Collector.repr_failure
+        # Docs on ExcInfo class itself: https://docs.pytest.org/en/6.2.x/reference.html#exceptioninfo
+        )
