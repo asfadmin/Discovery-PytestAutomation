@@ -11,6 +11,8 @@ This plugin is compatible to run alongside vanilla pytest tests, without interfe
 - [How to setup the Test Suite](#how-to-setup-the-test-suite)
   - [1) Install the plugin](#1-install-the-plugin)
   - [2) Add both required files](#2-add-both-required-files)
+    - [pytest_config.yml](#pytestconfigyml)
+    - [pytest_managers.py](#pytestmanagerspy)
   - [3) Write the yaml tests](#3-write-the-yaml-tests)
     - [yaml requirements](#yaml-requirements)
     - [writing yaml tests example](#writing-yaml-tests-example)
