@@ -33,6 +33,7 @@ class YamlFile(pytest.File):
 class YamlItem(pytest.Item):
 
     def __init__(self, parent, test_info):
+        # Init your variables:
         super().__init__(test_info["title"], parent)
         self.file_name = parent.get_name()
         self.test_info = test_info
@@ -64,20 +65,20 @@ class YamlItem(pytest.Item):
         """Called when self.runtest() raises an exception."""
         # Use built in cli arg:
         tbstyle = self.config.getoption("tbstyle", "auto")
-        # If test_type_name got declared, use the name! Else test threw before it was hit:
+        # If test_type_name got declared, use the name! Else test threw before it was hit:        
         try:
             test_type = self.test_type_name
         except AttributeError:
             test_type = "UNKNOWN"
-        # Return the error message for the test:
-        return "\n"+"\n".join(
+        error_msg = "\n".join(
             [
                 "Test failed",
-                str(self._repr_failure_py(excinfo, style=tbstyle)),
                 "   Test: '{0}'".format(self.test_info["title"]),
                 "   File: '{0}'".format(self.file_name),
                 "   Test Type: '{0}'".format(test_type),
             ]
-        # Default method: https://docs.pytest.org/en/6.2.x/_modules/_pytest/nodes.html#Collector.repr_failure
-        # Docs on ExcInfo class itself: https://docs.pytest.org/en/6.2.x/reference.html#exceptioninfo
         )
+        # Add this section to the report:
+        self.add_report_section("call", "yaml test info", error_msg)
+        # Call the *real* report, and return that:
+        return self._repr_failure_py(excinfo, style=tbstyle)
