@@ -48,7 +48,10 @@ class YamlItem(pytest.Item):
 
             # If you pass both filters, congrats! You can run the test:
             if passed_key_check and passed_file_check:
+                # Save variables about finding the test:
                 found_test = True
+                self.test_type_name = poss_test_type["title"]
+                # Check if you're supposed to run it:
                 skipTestsIfNecessary(config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=poss_test_type["title"])
                 # Run the test!!!
                 # TODO: Add fixture support somehow: https://stackoverflow.com/questions/44959124/is-there-way-to-directly-reference-to-a-pytest-fixture-from-a-simple-non-test
@@ -61,6 +64,11 @@ class YamlItem(pytest.Item):
         """Called when self.runtest() raises an exception."""
         # Use built in cli arg:
         tbstyle = self.config.getoption("tbstyle", "auto")
+        # If test_type_name got declared, use the name! Else test threw before it was hit:
+        try:
+            test_type = self.test_type_name
+        except AttributeError:
+            test_type = "UNKNOWN"
         # Return the error message for the test:
         return "\n"+"\n".join(
             [
@@ -68,6 +76,7 @@ class YamlItem(pytest.Item):
                 str(self._repr_failure_py(excinfo, style=tbstyle)),
                 "   Test: '{0}'".format(self.test_info["title"]),
                 "   File: '{0}'".format(self.file_name),
+                "   Test Type: '{0}'".format(test_type),
             ]
         # Default method: https://docs.pytest.org/en/6.2.x/_modules/_pytest/nodes.html#Collector.repr_failure
         # Docs on ExcInfo class itself: https://docs.pytest.org/en/6.2.x/reference.html#exceptioninfo
