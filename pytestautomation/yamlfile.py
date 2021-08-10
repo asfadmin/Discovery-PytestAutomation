@@ -43,11 +43,11 @@ class YamlItem(pytest.Item):
         for poss_test_type in PYTEST_CONFIG_INFO["test_types"]:
             # *IF* required_keys are declared, make sure the test only runs if THOSE keys are inside the test info:
             passed_key_check = True if "required_keys" not in poss_test_type or set(poss_test_type["required_keys"]).issubset(self.test_info) else False
-            # *IF* required_files are declared, make sure only those files are ran:
-            passed_file_check = True if "required_files" not in poss_test_type or self.file_name in poss_test_type["required_files"] else False
+            # *IF* required_in_title is declared, make sure the test only runs if it has the key in it's title:
+            passed_title_check = True if "required_in_title" not in poss_test_type or poss_test_type["required_in_title"].lower() in self.test_info["title"].lower() else False
 
             # If you pass both filters, congrats! You can run the test:
-            if passed_key_check and passed_file_check:
+            if passed_key_check and passed_title_check:
                 # Save variables about finding the test:
                 found_test = True
                 self.test_type_name = poss_test_type["title"]

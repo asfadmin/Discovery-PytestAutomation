@@ -16,6 +16,7 @@ This plugin is compatible to run alongside vanilla pytest tests, without interfe
   - [3) Write the yaml tests](#3-write-the-yaml-tests)
     - [yaml requirements](#yaml-requirements)
     - [writing yaml tests example](#writing-yaml-tests-example)
+    - [yaml test philosophy](#yaml-test-philosophy)
   - [4) Using conftest.py for extra Flexibility](#4-using-conftestpy-for-extra-flexibility)
     - [Adding CLI Options](#adding-cli-options)
     - [Running scripts before/after the Suite](#running-scripts-beforeafter-the-suite)
@@ -59,17 +60,21 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
     - For running factorial tests:
         required_keys: factor_num
-        required_file: test_factorials.yml
+        required_in_title: test-factor
         method: test_NumpysFactor
         variables:
             throw_on_negative: False
     ```
 
-    Each [yml test](#3-write-the-yaml-tests) will go through this list *in order*, and the following things will happen:
+    - `required_keys`: The yml test must contain ALL these keys to run with this `test type`.
 
-    - The `required_keys` is compared against the keys inside the test, *IF* the `required_keys` is declared in that element. Same happens for `required_files` at the same time. BOTH have to hold true for the test to run
+    - `required_in_title`: The yml test's title has this string INSIDE it's title. NOTE: With basic title names, it's easy to accidentally match new tests later on. Best practice is to be unique, like "test-[something]". 
 
-        - Note: This means if it has *neither* key, ALL tests will match it, so *no* tests will continue pass that `test type`.
+    Each [yml test](#3-write-the-yaml-tests) will go through the `test types` list *in order*, and the following things will happen:
+
+    - ONLY keys that are declared will be checked. You can have multiple `required_*` keys in the same `test_type`, and they ALL have to match for the test to run.
+
+        - Note: This means if it has *NO* `required_*` keys, ALL tests will match it, so *no* tests will continue pass that `test type`.
     
     - The test is matched to that type, so the function under `method` will be looked for in [pytest_managers.py](#pytestmanagerspy) and called.
 
@@ -152,7 +157,7 @@ tests:
     factor_num: 4
     answer: 24
 
-- Factorial special case zero:
+- test-factor Factorial special case zero:
     factor_num: 0
     answer: 1
 
@@ -162,7 +167,13 @@ tests:
     answer: -2
 ```
 
-The first test gets matched to the addition `test type` in the pytest_config [example](#pytestconfigyml-example), containing the two required keys. The second and third tests *would* get matched to the factorial test, *except* they're not in the file named "test_factorials.yml", so they just fail when you run the suite. The fourth test gets matched to the addition `test type`, so it runs with that `method` in the [pytest_config.yml](#pytestconfigyml).
+The first test gets matched to the addition `test type` in the pytest_config [example](#pytestconfigyml-example), containing the two required keys. 
+
+The second and *would* get matched to the factorial test, *except* it doesn't have "test-factor" in it's title, like `required_in_title` says it should, so it doesn't get matched to *anything* and fails.
+
+The third test *does* have "test-factor" in it's title, so it runs as normal. 
+
+The fourth test gets matched to the addition `test type`, so it runs with that `method` in the [pytest_config.yml](#pytestconfigyml).
 
 **IMPORTANT NOTE**: Before passing each yml test to their `method`, the plugin will move the title *into* the info, with `title` becoming key. So the `title` key is reserved:
 
@@ -181,6 +192,15 @@ The first test gets matched to the addition `test type` in the pytest_config [ex
 ```
 
 (Example on how to access the `test_info` values [here](#pytestmanagerspy-example)).
+
+#### **yaml test philosophy**:
+
+One key idea behind organizing tests into yamls, is you can move each individual yml test between files, and it'll still behave as expected.
+
+- This means you can have "test_known_bugs.yml" to exclude from build pipelines, or "test_prod_only.yml" that only gets executed against your prod environment. etc.
+
+- This also means we can't run tests based on what file they're in, the `test_type` can only look at the yml test itself to decide where it goes.
+
 
 ### 4) Using `conftest.py` for extra Flexibility
 
@@ -246,7 +266,7 @@ You can find the full list [here (ext link)](https://docs.pytest.org/en/6.2.x/re
 ```bash
 pytest <pytest and plugin args here> <PATH> <custom args here>
 # Example:
-pytest -n auto -s -tb short . --api devel
+pytest -n auto -s -tb short --df known_bugs . --api devel
 ```
 - **Common pytest CLI args**:
    - '`-n` INT' => The number of threads to use. Make sure tests are thread-safe. (Default = 1, install pytest-xdist to use).
