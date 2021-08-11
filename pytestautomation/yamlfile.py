@@ -33,6 +33,7 @@ class YamlFile(pytest.File):
 class YamlItem(pytest.Item):
 
     def __init__(self, parent, test_info):
+        # Init your variables:
         super().__init__(test_info["title"], parent)
         self.file_name = parent.get_name()
         self.test_info = test_info
@@ -43,12 +44,15 @@ class YamlItem(pytest.Item):
         for poss_test_type in PYTEST_CONFIG_INFO["test_types"]:
             # *IF* required_keys are declared, make sure the test only runs if THOSE keys are inside the test info:
             passed_key_check = True if "required_keys" not in poss_test_type or set(poss_test_type["required_keys"]).issubset(self.test_info) else False
-            # *IF* required_files are declared, make sure only those files are ran:
-            passed_file_check = True if "required_files" not in poss_test_type or self.file_name in poss_test_type["required_files"] else False
+            # *IF* required_in_title is declared, make sure the test only runs if it has the key in it's title:
+            passed_title_check = True if "required_in_title" not in poss_test_type or poss_test_type["required_in_title"].lower() in self.test_info["title"].lower() else False
 
             # If you pass both filters, congrats! You can run the test:
-            if passed_key_check and passed_file_check:
+            if passed_key_check and passed_title_check:
+                # Save variables about finding the test:
                 found_test = True
+                self.test_type_name = poss_test_type["title"]
+                # Check if you're supposed to run it:
                 skipTestsIfNecessary(config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=poss_test_type["title"])
                 # Run the test!!!
                 # TODO: Add fixture support somehow: https://stackoverflow.com/questions/44959124/is-there-way-to-directly-reference-to-a-pytest-fixture-from-a-simple-non-test
@@ -61,14 +65,20 @@ class YamlItem(pytest.Item):
         """Called when self.runtest() raises an exception."""
         # Use built in cli arg:
         tbstyle = self.config.getoption("tbstyle", "auto")
-        # Return the error message for the test:
-        return "\n"+"\n".join(
+        # If test_type_name got declared, use the name! Else test threw before it was hit:        
+        try:
+            test_type = self.test_type_name
+        except AttributeError:
+            test_type = "UNKNOWN"
+        error_msg = "\n".join(
             [
                 "Test failed",
-                str(self._repr_failure_py(excinfo, style=tbstyle)),
                 "   Test: '{0}'".format(self.test_info["title"]),
                 "   File: '{0}'".format(self.file_name),
+                "   Test Type: '{0}'".format(test_type),
             ]
-        # Default method: https://docs.pytest.org/en/6.2.x/_modules/_pytest/nodes.html#Collector.repr_failure
-        # Docs on ExcInfo class itself: https://docs.pytest.org/en/6.2.x/reference.html#exceptioninfo
         )
+        # Add this section to the report:
+        self.add_report_section("call", "yaml test info", error_msg)
+        # Call the *real* report, and return that:
+        return self._repr_failure_py(excinfo, style=tbstyle)
