@@ -68,7 +68,7 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
     - `required_keys`: The yml test must contain ALL these keys to run with this `test type`.
 
-    - `required_in_title`: The yml test's title has this string INSIDE it's title. NOTE: With basic title names, it's easy to accidentally match new tests later on. Best practice is to be unique, like "test-[something]". 
+    - `required_in_title`: Check if the test title contains this string (case insensitive). NOTE: With basic values, it's easy to accidentally match new tests later on. Best practice is to use something like "test-[something]", instead of just "[something]". 
 
     Each [yml test](#3-write-the-yaml-tests) will go through the `test types` list *in order*, and the following things will happen:
 
