@@ -19,11 +19,15 @@ class YamlFile(pytest.File):
         return os.path.basename(self.fspath)
 
     def collect(self):
+        # Load the data. (required=False to NOT throw if it can't).
         data = loadYamlFile(self.fspath, required=False)
 
         # Make sure it has tests:
+        if data is None:
+            warnings.warn(UserWarning("Could not load file: '{0}'. Skipping.".format(self.fspath)))
+            return
         if "tests" not in data:
-            warnings.warn(UserWarning("File is missing 'tests' key, skipping: '{0}'.".format(self.fspath)))
+            warnings.warn(UserWarning("File is missing required 'tests' key: '{0}'. Skipping.".format(self.fspath)))
             return
 
         for json_test in data["tests"]:
