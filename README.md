@@ -100,7 +100,8 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
     #### **pytest_managers.py example**
     ```python
     # Contents of pytest_managers.py
-    from custom_math import run_add_test, run_fact_test
+    from custom_add import run_add_test
+    from custom_factor import run_fact_test
 
     # The methods here matchs the 'method' key in 'pytest_config.yml' example. (Required)
 
@@ -111,7 +112,7 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
         assert test_info["x_add"] + test_info["y_add"] == test_info["answer"]
 
     def test_NumpysFactor(**args):
-    	run_fact_test(**args)
+        run_fact_test(**args)
         # Or just run test here:
         test_factor = args["test_info"]["factor_num"]
         assert factor(test_factor) == args["test_info"]["answer"]
