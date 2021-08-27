@@ -305,9 +305,14 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
 #### 1) Create your environment:
 
 ```bash
+# Upgrade pip to latest and greatest
 python -m pip install --upgrade pip
+# Install tool for creating environments
 python3 -m pip install virtualenv
+# Create the environment
 virtualenv --python=python3 ~/PytestAuto-env
+# Jump inside it. (You'll need to do this for each new shell)
+source ~/PytestAuto-env/bin/activate
 ```
  - You should see your terminal start with "(PytestAuto-env)" now.
 
