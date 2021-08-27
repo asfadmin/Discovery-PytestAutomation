@@ -299,3 +299,9 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
     Any arguments **you** define in your projects `conftest.py` file. More info [here](#adding-cli-options).
 
 ----
+
+#### Testing hot links with - on github
+
+[test](#testing-hot-links-with---on-github)
+
+because it can't handle _ consistantly...
