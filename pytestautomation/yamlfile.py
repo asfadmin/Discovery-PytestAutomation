@@ -4,10 +4,13 @@ import warnings # warn
 
 from .helpers import loadYamlFile, seperateKeyVal, skipTestsIfNecessary
 
+# For type hints:
+from typing import Generator
+from _pytest._code.code import ExceptionInfo, TerminalRepr
 
 PYTEST_CONFIG_INFO = None
 
-def savePytestConfigInfo(info: dict):
+def savePytestConfigInfo(info: dict) -> None:
     global PYTEST_CONFIG_INFO
     PYTEST_CONFIG_INFO = info
 
@@ -15,10 +18,10 @@ def savePytestConfigInfo(info: dict):
 class YamlFile(pytest.File):
     ## Default init used. Declared: self.parent, self.fspath
 
-    def get_name(self):
+    def get_name(self) -> str:
         return os.path.basename(self.fspath)
 
-    def collect(self):
+    def collect(self) -> Generator[pytest.Item, None, None]:
         # Load the data. (required=False to NOT throw if it can't).
         data = loadYamlFile(self.fspath, required=False)
 
@@ -37,13 +40,13 @@ class YamlFile(pytest.File):
 
 class YamlItem(pytest.Item):
 
-    def __init__(self, parent, test_info):
+    def __init__(self, parent: YamlFile, test_info: dict):
         # Init your variables:
         super().__init__(test_info["title"], parent)
         self.file_name = parent.get_name()
         self.test_info = test_info
 
-    def runtest(self):
+    def runtest(self) -> None:
         # Look for the right config to run off of:
         found_test = False
         for poss_test_type in PYTEST_CONFIG_INFO["test_types"]:
@@ -66,7 +69,7 @@ class YamlItem(pytest.Item):
                 break
         assert found_test, "TEST TYPE NOT FOUND: Could not find which 'test_types' element in pytest-config.yml to use with this test."
 
-    def repr_failure(self, excinfo):
+    def repr_failure(self, excinfo: ExceptionInfo) -> TerminalRepr:
         """Called when self.runtest() raises an exception."""
         # Use built in cli arg:
         tbstyle = self.config.getoption("tbstyle", "auto")

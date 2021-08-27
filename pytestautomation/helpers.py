@@ -7,6 +7,10 @@ import importlib    # import_module
 import pytest       # skip
 import warnings     # warn
 
+# For type hints:
+from typing import Union
+from types import ModuleType
+from _pytest.config import Config
 
 def removeSubmodulePaths(paths: list, rootdir: str) -> list:
     submodule_path = os.path.join(rootdir, ".gitmodules")
@@ -36,7 +40,7 @@ def getFileFromName(name: str, rootdir: str) -> str:
 ## Open yml/yaml File:
 #    Opens it and returns contents, or None if problems happen
 #    (Or throw if problems happen, if required == True)
-def loadYamlFile(path: str, required: bool=False):
+def loadYamlFile(path: str, required: bool=False) -> Union[list,dict,None]:
     path = os.path.abspath(path)
     if not os.path.isfile(path):
         error_msg = "YAML ERROR: File not found: '{0}'.".format(path)
@@ -63,7 +67,7 @@ def loadYamlFile(path: str, required: bool=False):
 ## Given "key: val", returns key, val:
 #    Usefull with "title: {test dict}" senarios
 #    file to report error if something's not formated
-def seperateKeyVal(mydict: dict, file: str):
+def seperateKeyVal(mydict: dict, file: str) -> dict:
     num_test_titles = len(list(mydict.keys()))
     assert num_test_titles == 1, "MISFORMATTED TEST: {0} keys found in a test. Only have 1, the title of the test. File: '{1}'.".format(num_test_titles, file)
     # return the individual key/val
@@ -74,7 +78,7 @@ def seperateKeyVal(mydict: dict, file: str):
     test_info["title"] = title
     return test_info
 
-def getPytestManagerModule(pytest_managers_path: str):
+def getPytestManagerModule(pytest_managers_path: str) -> ModuleType:
     # Add the path to PYTHONPATH, so you can import pytest-managers:
     sys.path.append(os.path.dirname(pytest_managers_path))
     try:
@@ -86,7 +90,7 @@ def getPytestManagerModule(pytest_managers_path: str):
     sys.path.remove(os.path.dirname(pytest_managers_path))
     return pytest_managers_module
 
-def skipTestsIfNecessary(config, test_name, file_name, test_type):
+def skipTestsIfNecessary(config: Config, test_name: str, file_name: str, test_type: str) -> None:
     # If they want to skip EVERYTHING:
     if config.getoption("--skip-all"):
         pytest.skip("Skipping ALL tests. (--skip-all cli arg was found).")
@@ -154,7 +158,7 @@ def skipTestsIfNecessary(config, test_name, file_name, test_type):
 
 ## Validates both pytest-managers.py and pytest-config.py, then loads their methods
 # and stores pointers in a dict, for tests to run from.
-def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
+def loadTestTypes(pytest_managers_path: str, pytest_config_path: str) -> dict:
     ## Load those methods, import what's needed. Save as global (to load in each YamlItem)
     pytest_config_info = loadYamlFile(pytest_config_path, required=True)
 
