@@ -11,8 +11,8 @@ This plugin is compatible to run alongside vanilla pytest tests, without interfe
 - [How to setup the Test Suite](#how-to-setup-the-test-suite)
   - [1) Install the plugin](#1-install-the-plugin)
   - [2) Add both required files](#2-add-both-required-files)
-    - [pytest_config.yml](#pytestconfigyml)
-    - [pytest_managers.py](#pytestmanagerspy)
+    - [pytest-config.yml](#pytest-configyml)
+    - [pytest-managers.py](#pytest-managerspy)
   - [3) Write the yaml tests](#3-write-the-yaml-tests)
     - [yaml requirements](#yaml-requirements)
     - [writing yaml tests example](#writing-yaml-tests-example)
@@ -40,18 +40,17 @@ python3 -m pip install pytest-automation
 
 It doesn't matter where in your project these exist, but names are case-sensitive, and *exactly* one of each can exist.
 
-- #### **pytest_config.yml**
+- #### **pytest-config.yml**
 
     This file defines where each individual [yml test](#3-write-the-yaml-tests) gets sent. You can choose based things like what dict keys are inside the test.
     
     This allows you to have multiple types of tests in the same file. (Useful for example, having a test_known_bugs.yml you can exclude from pipelines).
 
-    This file is required to have one `test_types` key. This holds a list, of each type of test (or `test type`) you'd like in your suite. Each element in the list, is in the format {"test title": {all_test_info}} (Shown in [this example](#pytestconfigyml-example) below).
+    This file is required to have one `test_types` key. This holds a list, of each type of test (or `test type`) you'd like in your suite. Each element in the list, is in the format {"test title": {all_test_info}} (Shown in [this example](#pytest-configyml-example) below).
 
-    #### **pytest_config.yml example**:
+    #### **pytest-config.yml example**:
     ```yaml
-    # Contents of pytest_config.yml
-
+    # Contents of pytest-config.yml
     test_types:
 
     - For running addition tests:
@@ -76,15 +75,15 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
         - Note: This means if it has *NO* `required_*` keys, ALL tests will match it, so *no* tests will continue pass that `test type`.
     
-    - The test is matched to that type, so the function under `method` will be looked for in [pytest_managers.py](#pytestmanagerspy) and called.
+    - The test is matched to that type, so the function under `method` will be looked for in [pytest-managers.py](#pytest-managerspy) and called.
 
     - If NO `test type` is found, that test will fail, and the next will run.
 
-    In the pytest_config [example](#pytestconfigyml-example) above, the test_PythonsAddition will only be called, if that yml test contains both the x_add and y_add keys. With the test_NumpysFactor, it'll only be called if that yml test has the factor_num key, AND it's in the test_factorials.yml file.
+    In the pytest-config [example](#pytest-configyml-example) above, the test_PythonsAddition will only be called, if that yml test contains both the x_add and y_add keys. With the test_NumpysFactor, it'll only be called if that yml test has the factor_num key, AND it's in the test_factorials.yml file.
 
     #### **Test Type Variables**:
 
-    In the pytest_config [example](#pytestconfigyml-example) above, you can see the following key in the second `test type`:
+    In the pytest-config [example](#pytest-configyml-example) above, you can see the following key in the second `test type`:
 
     ```yaml
     variables:
@@ -93,17 +92,17 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
     This `variables` key is optional. It'll pass it's contents onto each yml test, under the `test_type_vars` param. This is useful for declaring url's, endpoints, etc. More info on what arguments get passed to the `method` [here](#args-passed-into-each-test).
 
-- #### **pytest_managers.py**
+- #### **pytest-managers.py**
 
-    When a yml test is matched with [test type](#pytestconfigyml), that `method` is imported from this file, and ran.
+    When a yml test is matched with [test type](#pytest-configyml), that `method` is imported from this file, and ran.
 
-    #### **pytest_managers.py example**
+    #### **pytest-managers.py example**
     ```python
-    # Contents of pytest_managers.py
+    # Contents of pytest-managers.py
     from custom_add import run_add_test
     from custom_factor import run_fact_test
 
-    # The methods here matchs the 'method' key in 'pytest_config.yml' example. (Required)
+    # The methods here matchs the 'method' key in 'pytest-config.yml' example. (Required)
 
     def test_PythonsAddition(**args):
 	    run_add_test(**args)
@@ -118,21 +117,21 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
         assert factor(test_factor) == args["test_info"]["answer"]
     ```
 
-    Like with this example, it's *recommended* to have the testing code in another file, and call it from this one. This helps keeps the suite organized for larger tests. Even if you import other methods, ONLY the methods defined in this file can be loaded from the `method` key in [pytest_config.yml](#pytestconfigyml)
+    Like with this example, it's *recommended* to have the testing code in another file, and call it from this one. This helps keeps the suite organized for larger tests. Even if you import other methods, ONLY the methods defined in this file can be loaded from the `method` key in [pytest-config.yml](#pytest-configyml)
 
     #### **Args passed into each Test**
 
-    Each test in pytest_managers.py should only accept `**args` as their one param. That'll allow the plugin to add extra keys in the future, without breaking older tests. The following keys are currently guaranteed:
+    Each test in pytest-managers.py should only accept `**args` as their one param. That'll allow the plugin to add extra keys in the future, without breaking older tests. The following keys are currently guaranteed:
 
     - **`config`**: A [pytest config (ext link)](https://docs.pytest.org/en/6.2.x/reference.html?highlight=config#config) object. For interacting with pytest (i.e getting [cli options](#adding-cli-options) used when running suite)
 
     - **`test_info`**: The parameters from the yml file. This is passed into the python manager, and what makes each test unique. More info [here](#3-write-the-yaml-tests).
 
-    - **`test_type_vars`**: How to declare variables for a [test type](#pytestconfigyml), and not have to hard code them. More info [here](#test-type-variables).
+    - **`test_type_vars`**: How to declare variables for a [test type](#pytest-configyml), and not have to hard code them. More info [here](#test-type-variables).
 
 ### 3) Write the yaml tests
 
-This is where you define each individual test. Each test is matched to a [test type](#pytestconfigyml), then ran. 
+This is where you define each individual test. Each test is matched to a [test type](#pytest-configyml), then ran. 
 
 #### **yaml requirements**:
 
@@ -146,7 +145,7 @@ This is where you define each individual test. Each test is matched to a [test t
 
 ```yaml
 # Contents of test_MyCustomMath.yml
-# These examples match the "pytest_config.yml" example, with required_keys above. 
+# These examples match the "pytest-config.yml" example, with required_keys above. 
 
 tests:
 - Basic addition test:
@@ -168,13 +167,13 @@ tests:
     answer: -2
 ```
 
-The first test gets matched to the addition `test type` in the pytest_config [example](#pytestconfigyml-example), containing the two required keys. 
+The first test gets matched to the addition `test type` in the pytest-config [example](#pytest-configyml-example), containing the two required keys. 
 
 The second and *would* get matched to the factorial test, *except* it doesn't have "test-factor" in it's title, like `required_in_title` says it should, so it doesn't get matched to *anything* and fails.
 
 The third test *does* have "test-factor" in it's title, so it runs as normal. 
 
-The fourth test gets matched to the addition `test type`, so it runs with that `method` in the [pytest_config.yml](#pytestconfigyml).
+The fourth test gets matched to the addition `test type`, so it runs with that `method` in the [pytest-config.yml](#pytest-configyml).
 
 **IMPORTANT NOTE**: Before passing each yml test to their `method`, the plugin will move the title *into* the info, with `title` becoming key. So the `title` key is reserved:
 
@@ -192,7 +191,7 @@ The fourth test gets matched to the addition `test type`, so it runs with that `
 # To make accessing each item easier to access.
 ```
 
-(Example on how to access the `test_info` values [here](#pytestmanagerspy-example)).
+(Example on how to access the `test_info` values [here](#pytest-managerspy-example)).
 
 #### **yaml test philosophy**:
 
@@ -227,7 +226,7 @@ def pytest_addoption(parser):
 Then each tests can look at what was the user passed in, through the `config`.
 
 ```python
-# Contents of some test file, called by pytest_managers.py
+# Contents of some test file, called by pytest-managers.py
 
 def test_CheckQueries(**args):
     api = args["config"].getoption("--api")
@@ -285,7 +284,7 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
 
     - '`--only-run-file`', '`--dont-run-file`' (--of/--df) => (Can use multiple times) Determines if ALL tests in a file gets skipped, based on name of file. (Full name of file, but *not* the path).
 
-    - '`--only-run-type`', '`--dont-run-type`' (--ot/--dt) => (Can use multiple times) Looks at the title in pytest_config.yml. Tries to see if what is passed to these, is within the title.
+    - '`--only-run-type`', '`--dont-run-type`' (--ot/--dt) => (Can use multiple times) Looks at the title in pytest-config.yml. Tries to see if what is passed to these, is within the title.
 
     - '`skip-all`': Skips all pytest-automation yaml tests. (Doesn't skip vanilla pytest methods).
 
@@ -299,9 +298,3 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
     Any arguments **you** define in your projects `conftest.py` file. More info [here](#adding-cli-options).
 
 ----
-
-#### Testing hot links with - on github
-
-[test](#testing-hot-links-with---on-github)
-
-because it can't handle _ consistantly...

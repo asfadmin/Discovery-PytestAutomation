@@ -4,8 +4,8 @@ from .yamlfile import YamlFile, savePytestConfigInfo
 # Runs once at the start of everything:
 def pytest_sessionstart(session):
     # Figure out where core files are in project
-    pytest_config_path = getFileFromName("pytest_config.yml", rootdir=session.config.rootdir)
-    pytest_managers_path = getFileFromName("pytest_managers.py", rootdir=session.config.rootdir)
+    pytest_config_path = getFileFromName("pytest-config.yml", rootdir=session.config.rootdir)
+    pytest_managers_path = getFileFromName("pytest-managers.py", rootdir=session.config.rootdir)
     # Load info from said core files:
     test_types_info = loadTestTypes(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
     

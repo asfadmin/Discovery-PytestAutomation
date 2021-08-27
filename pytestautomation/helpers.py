@@ -75,11 +75,11 @@ def seperateKeyVal(mydict: dict, file: str):
     return test_info
 
 def getPytestManagerModule(pytest_managers_path: str):
-    # Add the path to PYTHONPATH, so you can import pytest_managers:
+    # Add the path to PYTHONPATH, so you can import pytest-managers:
     sys.path.append(os.path.dirname(pytest_managers_path))
     try:
-        # Actually import pytest_managers now:
-        pytest_managers_module = importlib.import_module("pytest_managers")
+        # Actually import pytest-managers now:
+        pytest_managers_module = importlib.import_module("pytest-managers")
     except ImportError as e:
         assert False, "IMPORT ERROR: Problem importing '{0}'. Error '{1}'.".format(pytest_managers_path, str(e))
     # Done with the import, cleanup your path:
@@ -152,14 +152,14 @@ def skipTestsIfNecessary(config, test_name, file_name, test_type):
                 pytest.skip("Test type contained --dont-run-file param (case insensitive)")
 
 
-## Validates both pytest_managers.py and pytest_config.py, then loads their methods
+## Validates both pytest-managers.py and pytest-config.py, then loads their methods
 # and stores pointers in a dict, for tests to run from.
 def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
     ## Load those methods, import what's needed. Save as global (to load in each YamlItem)
     pytest_config_info = loadYamlFile(pytest_config_path, required=True)
 
-    assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest_config.yml'."
-    assert isinstance(pytest_config_info["test_types"], type([])), "CONFIG ERROR: 'test_types' must be a list inside 'pytest_config.yml'. (Currently type '{0}').".format(type(pytest_config_info["test_types"]))
+    assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest-config.yml'."
+    assert isinstance(pytest_config_info["test_types"], type([])), "CONFIG ERROR: 'test_types' must be a list inside 'pytest-config.yml'. (Currently type '{0}').".format(type(pytest_config_info["test_types"]))
 
     list_of_tests = pytest_config_info["test_types"]
 
@@ -167,7 +167,7 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
 
     # Time to load the tests inside the config:
     for ii, test_config in enumerate(list_of_tests):
-        test_info = seperateKeyVal(test_config, "pytest_config.yml")
+        test_info = seperateKeyVal(test_config, "pytest-config.yml")
 
         # If "required_keys" or "required_files" field contain one item, turn into list of that one item:
         if "required_keys" in test_info and not isinstance(test_info["required_keys"], type([])):
@@ -179,14 +179,14 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str):
             warnings.warn(UserWarning("Test type found without required_keys AND required_files used, but there are test types after this one. Tests can't pass '{0}' and run on those.".format(test_info["title"])))
 
         # Make sure test_info has required keys:
-        assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest_config.yml)".format(test_info["title"])
+        assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest-config.yml)".format(test_info["title"])
 
         # Import the method inside the module:
         try:
             # This makes it so you can write test_info["method_pointer"](args) to actually call the method:
             test_info["method_pointer"] = getattr(pytest_managers_module, test_info["method"])
         except AttributeError:
-            assert False, "IMPORT ERROR: '{0}' not found in 'pytest_managers.py'.\nTried loading from: {1}.\n".format(test_info["method"], pytest_managers_module.__file__)
+            assert False, "IMPORT ERROR: '{0}' not found in 'pytest-managers.py'.\nTried loading from: {1}.\n".format(test_info["method"], pytest_managers_module.__file__)
         # Just a guarantee this field is declared, to pass into functions:
         if "variables" not in test_info:
             test_info["variables"] = None
