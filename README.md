@@ -321,14 +321,18 @@ source ~/PytestAuto-env/bin/activate
  ```bash
  # Because of the --python=python3 above, you can now just run 'python':
  python -m pip install setuptools wheel twine packaging
+ # Install the files needed to run setup.py:
+ python -m pip install <Path-to-this-repo-root>/requirements.txt
  ```
 
 #### 3) Install it:
 
+- Or run this after each change to the source.
+
 ```bash
 # NOTE: The --upgrade is needed for if you install
-# it multiple times. (Don't used cached).
-python -m pip install --upgrade <Path-where-repo-is-cloned>
+# it multiple times. (Don't use cached version).
+python -m pip install --upgrade <Path-to-this-repo-root>
 ```
 
 ----
