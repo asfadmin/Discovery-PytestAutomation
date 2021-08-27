@@ -23,6 +23,7 @@ This plugin is compatible to run alongside vanilla pytest tests, without interfe
     - [Full list of Hooks](#full-list-of-hooks)
 - [How to run tests](#how-to-run-tests)
   - [Running the Tests](#running-the-tests)
+- [How to Build from Source](#how-to-build-from-source)
 
 ----
 
@@ -296,5 +297,33 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
 - **Custom CLI args**:
 
     Any arguments **you** define in your projects `conftest.py` file. More info [here](#adding-cli-options).
+
+----
+
+## How to Build from Source
+
+#### 1) Create your environment:
+
+```bash
+python -m pip install --upgrade pip
+python3 -m pip install virtualenv
+virtualenv --python=python3 ~/PytestAuto-env
+```
+ - You should see your terminal start with "(PytestAuto-env)" now.
+
+#### 2) Install the required files to build:
+
+ ```bash
+ # Because of the --python=python3 above, you can now just run 'python':
+ python -m pip install setuptools wheel twine packaging
+ ```
+
+#### 3) Install it:
+
+```bash
+# NOTE: The --upgrade is needed for if you install
+# it multiple times. (Don't used cached).
+python -m pip install --upgrade <Path-where-repo-is-cloned>
+```
 
 ----
