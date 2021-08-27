@@ -38,6 +38,10 @@ First major release!
 
 - Added with `required_in_title` as an option to each `test_types`, that checks it's value against the title of each test. (Replacement for `required_files`. More info [here](https://github.com/asfadmin/Discovery-PytestAutomation/tree/stable#pytest-configyml-example)).
 
+- Python `type hints` to most functions.
+
+- Instructions on installing package from source in `README.md`
+
 ### Changed:
 - `pytest_managers.py` and `pytest_config.yml` have been renamed to `pytest-managers.py` and `pytest-config.yml`. This is because '_' is inconsistent between Markdown anchors, but '-' isn't.
 
