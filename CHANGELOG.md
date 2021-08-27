@@ -39,10 +39,10 @@ First major release!
 - Added with `required_in_title` as an option to each `test_types`, that checks it's value against the title of each test. (Replacement for `required_files`. More info [here](https://github.com/asfadmin/Discovery-PytestAutomation/tree/stable#pytest-configyml-example)).
 
 ### Changed:
-- `pytest_managers.py` and `pytest_config.yml` have been renamed to `pytest-managers.py` and `pytest-config.yml`. This is because '_' is inconsistant between Markdown anchors, but '-' isn't.
+- `pytest_managers.py` and `pytest_config.yml` have been renamed to `pytest-managers.py` and `pytest-config.yml`. This is because '_' is inconsistent between Markdown anchors, but '-' isn't.
 
 ### Removed:
-- Removed `required_files` key as an option from `test_types`. Decided each test should run exactly the same, reguardless of what file it's in. (Allows you to have a "known_bugs.yml" you can move tests in/out of).
+- Removed `required_files` key as an option from `test_types`. Decided each test should run exactly the same, regardless of what file it's in. (Allows you to have a "known_bugs.yml" you can move tests in/out of).
 
 ### Fixed:
 - Empty test_*.yml's used to stop test suite from running, since the parser returned `None` instead of a empty string.
