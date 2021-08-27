@@ -1,11 +1,16 @@
 import setuptools
 import subprocess
+from packaging.version import Version, InvalidVersion
 
 # Get the version from git and save it:
 package_version = subprocess.run(['git', 'describe', '--tags'], stdout=subprocess.PIPE).stdout.decode("utf-8").strip()
 
-if "." not in package_version:
+try:
+    # This guarantees it to be PEP 440 compliant
+    package_version = str(Version(package_version))
+except InvalidVersion:
     package_version = "0.0.0"
+
 
 with open("README.md", "r") as f:
     long_description = f.read()
@@ -24,6 +29,7 @@ setuptools.setup(
     classifiers=["Framework :: Pytest"],
     install_requires=[
         'pytest',
-        'PyYAML'
+        'PyYAML',
+        'packaging'
     ]
 )
