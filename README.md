@@ -70,9 +70,11 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
     - `required_in_title`: Check if the test title contains this string (case insensitive). NOTE: With basic values, it's easy to accidentally match new tests later on. Best practice is to use something like "test-[something]", instead of just "[something]". 
 
-    Each [yml test](#3-write-the-yaml-tests) will go through the `test types` list *in order*, and the following things will happen:
+    - `required_tag`: Check if the test also contiains this key. Run the test if the *values* match (case insensitive).
 
-    - ONLY keys that are declared will be checked. You can have multiple `required_*` keys in the same `test_type`, and they ALL have to match for the test to run.
+    Each [yml test](#3-write-the-yaml-tests) will go through the `test_types` list *in order*, and the following things will happen:
+
+    - ONLY keys that are declared will be checked. You can have multiple `required_*` keys in the same `test type`, and they ALL have to match for the test to run.
 
         - Note: This means if it has *NO* `required_*` keys, ALL tests will match it, so *no* tests will continue pass that `test type`.
     
@@ -140,7 +142,7 @@ This is where you define each individual test. Each test is matched to a [test t
 
 - The list of tests, must be under a **SINGLE** `tests` key, inside the file. If more than one key exists, they'll override each other, and you won't run all your tests.
 
-- Each item in the list, is a single dict of the format {"test title": {ALL_TEST_INFO}}
+- Each test in the list, is a single dict of the format {"test title": {ALL_TEST_INFO}}
 
 #### **writing yaml tests example**:
 
@@ -200,7 +202,7 @@ One key idea behind organizing tests into yamls, is you can move each individual
 
 - This means you can have "test_known_bugs.yml" to exclude from build pipelines, or "test_prod_only.yml" that only gets executed against your prod environment. etc.
 
-- This also means we can't run tests based on what file they're in, the `test_type` can only look at the yml test itself to decide where it goes.
+- This also means we can't run tests based on what file they're in, each `test type` can only look at the yml test itself to decide if it runs it.
 
 
 ### 4) Using `conftest.py` for extra Flexibility

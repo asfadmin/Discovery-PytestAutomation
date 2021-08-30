@@ -54,9 +54,12 @@ class YamlItem(pytest.Item):
             passed_key_check = True if "required_keys" not in poss_test_type or set(poss_test_type["required_keys"]).issubset(self.test_info) else False
             # *IF* required_in_title is declared, make sure the test only runs if it has the key in it's title:
             passed_title_check = True if "required_in_title" not in poss_test_type or poss_test_type["required_in_title"].lower() in self.test_info["title"].lower() else False
-
+            # *IF* required_tag is declared, make sure tests that also contain this key have the same value:
+            passed_tag_check = True if "required_tag" not in poss_test_type or "required_tag" not in self.test_info or poss_test_type["required_tag"].lower() == self.test_info["required_tag"].lower() else False
+            if "required_tag" in poss_test_type and "required_tag" in self.test_info and poss_test_type["required_tag"].lower() == self.test_info["required_tag"].lower():
+                exit()
             # If you pass both filters, congrats! You can run the test:
-            if passed_key_check and passed_title_check:
+            if passed_key_check and passed_title_check and passed_tag_check:
                 # Save variables about finding the test:
                 found_test = True
                 self.test_type_name = poss_test_type["title"]
