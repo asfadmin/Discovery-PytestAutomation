@@ -70,8 +70,6 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
     - `required_in_title`: Check if the test title contains this string (case insensitive). NOTE: With basic values, it's easy to accidentally match new tests later on. Best practice is to use something like "test-[something]", instead of just "[something]". 
 
-    - `required_tag`: Check if the test also contiains this key. Run the test if the *values* match (case insensitive).
-
     Each [yml test](#3-write-the-yaml-tests) will go through the `test_types` list *in order*, and the following things will happen:
 
     - ONLY keys that are declared will be checked. You can have multiple `required_*` keys in the same `test type`, and they ALL have to match for the test to run.

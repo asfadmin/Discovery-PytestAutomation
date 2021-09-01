@@ -27,10 +27,10 @@ class YamlFile(pytest.File):
 
         # Make sure it has tests:
         if data is None:
-            warnings.warn(UserWarning("Could not load file: '{0}'. Skipping.".format(self.fspath)))
+            warnings.warn(UserWarning(f"Could not load file: '{self.fspath}'. Skipping."))
             return
         if "tests" not in data:
-            warnings.warn(UserWarning("File is missing required 'tests' key: '{0}'. Skipping.".format(self.fspath)))
+            warnings.warn(UserWarning(f"File is missing required 'tests' key: '{self.fspath}'. Skipping."))
             return
 
         # Collect the tests into your suite:
@@ -54,12 +54,9 @@ class YamlItem(pytest.Item):
             passed_key_check = True if "required_keys" not in poss_test_type or set(poss_test_type["required_keys"]).issubset(self.test_info) else False
             # *IF* required_in_title is declared, make sure the test only runs if it has the key in it's title:
             passed_title_check = True if "required_in_title" not in poss_test_type or poss_test_type["required_in_title"].lower() in self.test_info["title"].lower() else False
-            # *IF* required_tag is declared, make sure tests that also contain this key have the same value:
-            passed_tag_check = True if "required_tag" not in poss_test_type or "required_tag" not in self.test_info or poss_test_type["required_tag"].lower() == self.test_info["required_tag"].lower() else False
-            if "required_tag" in poss_test_type and "required_tag" in self.test_info and poss_test_type["required_tag"].lower() == self.test_info["required_tag"].lower():
-                exit()
+
             # If you pass both filters, congrats! You can run the test:
-            if passed_key_check and passed_title_check and passed_tag_check:
+            if passed_key_check and passed_title_check:
                 # Save variables about finding the test:
                 found_test = True
                 self.test_type_name = poss_test_type["title"]
@@ -84,9 +81,9 @@ class YamlItem(pytest.Item):
         error_msg = "\n".join(
             [
                 "Test failed",
-                "   Test: '{0}'".format(self.test_info["title"]),
-                "   File: '{0}'".format(self.file_name),
-                "   Test Type: '{0}'".format(test_type),
+                f"   Test: '{self.test_info['title']}'",
+                f"   File: '{self.file_name}'",
+                f"   Test Type: '{test_type}'",
             ]
         )
         # Add this section to the report:
