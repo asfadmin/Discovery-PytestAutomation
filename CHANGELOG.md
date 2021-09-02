@@ -26,6 +26,12 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 -->
 
+------
+
+## [version](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.0.0...v1.0.1)
+
+### Changed:
+- Improved error checking and error messages, for misformed yml tests and `test_types`.
 
 ------
 
