@@ -1,11 +1,17 @@
-from .helpers import getFileFromName, loadTestTypes
+from .helpers import getSingleFileFromName, loadTestTypes
 from .yamlfile import YamlFile, savePytestConfigInfo
 
+# For type hints:
+from pytest import Session, File
+from _pytest.config.argparsing import Parser
+from py._path.local import LocalPath
+from _pytest.nodes import Collector
+
 # Runs once at the start of everything:
-def pytest_sessionstart(session):
+def pytest_sessionstart(session: Session) -> None:
     # Figure out where core files are in project
-    pytest_config_path = getFileFromName("pytest_config.yml", rootdir=session.config.rootdir)
-    pytest_managers_path = getFileFromName("pytest_managers.py", rootdir=session.config.rootdir)
+    pytest_config_path = getSingleFileFromName("pytest-config.yml", rootdir=session.config.rootdir)
+    pytest_managers_path = getSingleFileFromName("pytest-managers.py", rootdir=session.config.rootdir)
     # Load info from said core files:
     test_types_info = loadTestTypes(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
     
@@ -14,7 +20,7 @@ def pytest_sessionstart(session):
 
 
 ## Custom CLI options: 
-def pytest_addoption(parser):
+def pytest_addoption(parser: Parser) -> None:
     group = parser.getgroup('PytestAutomation')
     group.addoption("--only-run-name", "--on", action="append", default=None,
         help = "Only run tests that contains this param in their name.")
@@ -32,6 +38,6 @@ def pytest_addoption(parser):
         help = "Skips ALL the tests. (Added for pipeline use).")
 
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
-def pytest_collect_file(parent, path):
+def pytest_collect_file(parent: Collector, path: LocalPath) -> File:
     if path.ext in [".yml", ".yaml"] and path.basename.startswith("test_"):
         return YamlFile.from_parent(parent, fspath=path)

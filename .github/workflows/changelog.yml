@@ -1,0 +1,28 @@
+name: Update changelog on Releases
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - labeled
+      - unlabeled
+      - edited
+      - synchronize
+    branches:
+      - stable
+
+jobs:
+  changelog-updated:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.pull_request.labels.*.name, 'skip-release')"
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Changelog check
+        uses: Zomzog/changelog-checker@v1.2.0
+        with:
+          fileName: CHANGELOG.md
+          checkNotification: Simple # Default 'Detailed' doesn't work with forks
+          # noChangelogLabel: skip-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
