@@ -90,6 +90,28 @@ def getPytestManagerModule(pytest_managers_path: str) -> ModuleType:
     sys.path.remove(os.path.dirname(pytest_managers_path))
     return pytest_managers_module
 
+def skipTestsOnlyRunFilter(config: Config, option: str, check_against: str, option_description: str):
+    # If the option exists:
+    if config.getoption(option) is not None:
+        # If you match with ANY of the values passed to 'option':
+        found_in_title = False
+        for only_run_filter in config.getoption(option):
+            if only_run_filter.lower() in check_against.lower():
+                # Found it!
+                found_in_title = True
+                break
+        # Check if you found it. If you didn't, skip the test:
+        if not found_in_title:
+            pytest.skip(f"{option_description} did not contain {option} param (case insensitive)")
+
+def skipTestsDontRunFilter(config: Config, option: str, check_against: str, option_description: str):
+    # If the option exists:
+    if config.getoption(option) is not None:
+        # Nice thing here is, you can skip the second you find it:
+        for dont_run_filter in config.getoption(option):
+            if dont_run_filter.lower() in check_against.lower():
+                pytest.skip(f"{option_description} contained {option} param (case insensitive)")
+
 def skipTestsIfNecessary(config: Config, test_name: str, file_name: str, test_type: str) -> None:
     # If they want to skip EVERYTHING:
     if config.getoption("--skip-all"):
@@ -97,63 +119,23 @@ def skipTestsIfNecessary(config: Config, test_name: str, file_name: str, test_ty
     
     ### ONLY/DONT RUN NAME:
     # If they only want to run something, based on the test title:
-    if config.getoption("--only-run-name") is not None:
-        # If you match with ANY of the values passed to "--only-run-name":
-        found_in_title = False
-        for only_run_filter in config.getoption("--only-run-name"):
-            if only_run_filter.lower() in test_name.lower():
-                # Found it!
-                found_in_title = True
-                break
-        # Check if you found it. If you didn't, skip the test:
-        if not found_in_title:
-            pytest.skip("Title of test did not contain --only-run-name param (case insensitive)")
+    skipTestsOnlyRunFilter(config, "--only-run-name", test_name, "Title of test")
     # If they DONT want to run something, based on test title:
-    if config.getoption("--dont-run-name") is not None:
-        # Nice thing here is, you can skip the second you find it:
-        for dont_run_filter in config.getoption("--dont-run-name"):
-            if dont_run_filter.lower() in test_name.lower():
-                pytest.skip("Title of test contained --dont-run-name param (case insensitive)")
+    skipTestsDontRunFilter(config, "--dont-run-name", test_name, "Title of test")
     
     ### ONLY/DONT RUN FILE:
     # If they only want to run something, based on the file name:
-    if config.getoption("--only-run-file") is not None:
-        # If you match with ANY of the values passed to "--only-run-file":
-        found_in_file = False
-        for only_run_filter in config.getoption("--only-run-file"):
-            if only_run_filter.lower() in file_name.lower():
-                # Found it!
-                found_in_file = True
-                break
-        # Check if you found it. If you didn't, skip the test:
-        if not found_in_file:
-            pytest.skip("Name of file did not contain --only-run-file param (case insensitive)")
+    skipTestsOnlyRunFilter(config, "--only-run-file", file_name, "Name of file")
     # If they DONT want to run something, based on file name:
-    if config.getoption("--dont-run-file") is not None:
-        # Nice thing here is, you can skip the second you find it:
-        for dont_run_filter in config.getoption("--dont-run-file"):
-            if dont_run_filter.lower() in file_name.lower():
-                pytest.skip("Name of file contained --dont-run-file param (case insensitive)")
+    skipTestsDontRunFilter(config, "--dont-run-file", file_name, "Name of file")
+
 
     ### ONLY/DONT RUN TYPE:
     # If they only want to run something, based on the test type:
-    if config.getoption("--only-run-type") is not None:
-        # If you match with ANY of the values passed to "--only-run-type":
-        found_in_type = False
-        for only_run_filter in config.getoption("--only-run-type"):
-            if only_run_filter.lower() in test_type.lower():
-                # Found it!
-                found_in_type = True
-                break
-        # Check if you found it. If you didn't, skip the test:
-        if not found_in_type:
-            pytest.skip("Test type did not did not contain --only-run-type param (case insensitive)")
+    skipTestsOnlyRunFilter(config, "--only-run-type", test_type, "Test type")
     # If they DONT want to run something, based on test type:
-    if config.getoption("--dont-run-type") is not None:
-        # Nice thing here is, you can skip the second you find it:
-        for dont_run_filter in config.getoption("--dont-run-type"):
-            if dont_run_filter.lower() in test_type.lower():
-                pytest.skip("Test type contained --dont-run-file param (case insensitive)")
+    skipTestsDontRunFilter(config, "--dont-run-type", test_type, "Test type")
+
 
 
 ## Validates both pytest-managers.py and pytest-config.py, then loads their methods
