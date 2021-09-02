@@ -27,14 +27,14 @@ def removeSubmodulePaths(paths: list, rootdir: str) -> list:
             valid_paths.append(path)
     return valid_paths        
 
-def getFileFromName(name: str, rootdir: str) -> str:
+def getSingleFileFromName(name: str, rootdir: str) -> str:
     # From your current dir, find all the files with this name:
     recursive_path = os.path.abspath(os.path.join(rootdir, "**", name))
     possible_paths = glob.glob(recursive_path, recursive=True)
     # If any are in a sub-repo/submodule, ignore it. (They might have their *own* config):
     possible_paths = removeSubmodulePaths(possible_paths, rootdir)
     # Make sure you got only found one config:
-    assert len(possible_paths) == 1, "WRONG NUMBER OF CONFIGS: Must have exactly one '{0}' file inside project. Found {1} instead.\nBase path used to find files: {2}.".format(name, len(possible_paths), recursive_path)
+    assert len(possible_paths) == 1, f"WRONG NUMBER OF FILES: Must have exactly one '{name}' file inside project. Found {len(possible_paths)} instead.\nBase path used to find files: {recursive_path}."
     return possible_paths[0]
 
 ## Open yml/yaml File:
@@ -43,7 +43,7 @@ def getFileFromName(name: str, rootdir: str) -> str:
 def loadYamlFile(path: str, required: bool=False) -> Union[list,dict,None]:
     path = os.path.abspath(path)
     if not os.path.isfile(path):
-        error_msg = "YAML ERROR: File not found: '{0}'.".format(path)
+        error_msg = f"YAML ERROR: File not found: '{path}'."
         # Throw if this is required to work, or warn otherwise
         assert not required, error_msg
         warnings.warn(UserWarning(error_msg))
@@ -52,13 +52,13 @@ def loadYamlFile(path: str, required: bool=False) -> Union[list,dict,None]:
         try:
             yaml_dict = yaml.safe_load(yaml_file)
         except yaml.YAMLError as e:
-            error_msg = "YAML ERROR: Couldn't read file: '{0}'. Error '{1}'.".format(path, str(e))
+            error_msg = f"YAML ERROR: Couldn't read file: '{path}'. Error '{e}'."
             # Throw if this is required to work, or warn otherwise
             assert not required, error_msg
             warnings.warn(UserWarning(error_msg))
             return None
     if yaml_dict is None:
-        error_msg = "YAML ERROR: File is empty: '{0}'.".format(path)
+        error_msg = f"YAML ERROR: File is empty: '{path}'."
         # Throw if this is required to work, or warn otherwise
         assert not required, error_msg
         warnings.warn(UserWarning(error_msg))
@@ -69,11 +69,11 @@ def loadYamlFile(path: str, required: bool=False) -> Union[list,dict,None]:
 #    file to report error if something's not formated
 def seperateKeyVal(mydict: dict, file: str) -> dict:
     num_test_titles = len(list(mydict.keys()))
-    assert num_test_titles == 1, "MISFORMATTED TEST: {0} keys found in a test. Only have 1, the title of the test. File: '{1}'.".format(num_test_titles, file)
+    assert num_test_titles == 1, f"MISFORMATTED TEST: {num_test_titles} keys found in a test. Only have 1, the title of the test. File: '{file}'."
     # return the individual key/val
     title, test_info = next(iter( mydict.items() ))
     # Make sure the title key isn't in use already, it's reserved:
-    assert "title" not in test_info, "MISFORMATTED TEST: 'title' key found in test '{0}'. This key is reserved for internal use only. File '{1}'.".format(title, file)
+    assert "title" not in test_info, f"MISFORMATTED TEST: 'title' key found in test '{title}'. This key is reserved for internal use only. File: '{file}'."
     # Save title to test_info. (Might seem reduntant, but this gets all test_info keys at base level, AND still saves the test title)
     test_info["title"] = title
     return test_info
@@ -85,7 +85,7 @@ def getPytestManagerModule(pytest_managers_path: str) -> ModuleType:
         # Actually import pytest-managers now:
         pytest_managers_module = importlib.import_module("pytest-managers")
     except ImportError as e:
-        assert False, "IMPORT ERROR: Problem importing '{0}'. Error '{1}'.".format(pytest_managers_path, str(e))
+        assert False, f"IMPORT ERROR: Problem importing '{pytest_managers_path}'. Error '{e}'."
     # Done with the import, cleanup your path:
     sys.path.remove(os.path.dirname(pytest_managers_path))
     return pytest_managers_module
@@ -163,7 +163,7 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str) -> dict:
     pytest_config_info = loadYamlFile(pytest_config_path, required=True)
 
     assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest-config.yml'."
-    assert isinstance(pytest_config_info["test_types"], type([])), "CONFIG ERROR: 'test_types' must be a list inside 'pytest-config.yml'. (Currently type '{0}').".format(type(pytest_config_info["test_types"]))
+    assert isinstance(pytest_config_info["test_types"], type([])), f"CONFIG ERROR: 'test_types' must be a list inside 'pytest-config.yml'. (Currently type: {type(pytest_config_info['test_types'])})."
 
     list_of_tests = pytest_config_info["test_types"]
 
@@ -180,17 +180,17 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str) -> dict:
             test_info["required_files"] = [test_info["required_files"]]
         # If neither are used, AND you have tests after this one, warn that those tests can't be reached:
         if "required_keys" not in test_info and "required_files" not in test_info and ii < (len(list_of_tests)-1):
-            warnings.warn(UserWarning("Test type found without required_keys AND required_files used, but there are test types after this one. Tests can't pass '{0}' and run on those.".format(test_info["title"])))
+            warnings.warn(UserWarning(f"Test type found without required_keys AND required_files used, but there are test types after this one. Tests can't pass '{test_info['title']}' and run on those."))
 
         # Make sure test_info has required keys:
-        assert "method" in test_info, "CONFIG ERROR: Require key 'method' not found in test '{0}'. (pytest-config.yml)".format(test_info["title"])
+        assert "method" in test_info, f"CONFIG ERROR: Required key 'method' not found in test '{test_info['title']}'. (pytest-config.yml)"
 
         # Import the method inside the module:
         try:
             # This makes it so you can write test_info["method_pointer"](args) to actually call the method:
             test_info["method_pointer"] = getattr(pytest_managers_module, test_info["method"])
         except AttributeError:
-            assert False, "IMPORT ERROR: '{0}' not found in 'pytest-managers.py'.\nTried loading from: {1}.\n".format(test_info["method"], pytest_managers_module.__file__)
+            assert False, f"IMPORT ERROR: '{test_info['method']}' not found in 'pytest-managers.py'. Tried loading from: '{pytest_managers_module.__file__}'."
         # Just a guarantee this field is declared, to pass into functions:
         if "variables" not in test_info:
             test_info["variables"] = None
