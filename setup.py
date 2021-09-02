@@ -6,7 +6,7 @@ from packaging.version import Version, InvalidVersion
 package_version = subprocess.run(['git', 'describe', '--tags'], stdout=subprocess.PIPE).stdout.decode("utf-8").strip()
 
 try:
-    # This guarantees it to be PEP 440 compliant
+    # This guarantees it to be PEP 440 compliant. (Which sometimes, git creates a non-compliant version)
     package_version = str(Version(package_version))
 except InvalidVersion:
     package_version = "0.0.0"
