@@ -35,7 +35,7 @@ class YamlFile(pytest.File):
 
         # Collect the tests into your suite:
         for json_test in data["tests"]:
-            test_info = seperateKeyVal(json_test, self.fspath)
+            test_info = seperateKeyVal(json_test, self.fspath, "test")
             yield YamlItem.from_parent(self, test_info=test_info)
 
 class YamlItem(pytest.Item):
