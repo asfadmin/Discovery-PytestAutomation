@@ -12,27 +12,11 @@ from typing import Union
 from types import ModuleType
 from _pytest.config import Config
 
-def removeSubmodulePaths(paths: list, rootdir: str) -> list:
-    submodule_path = os.path.join(rootdir, ".gitmodules")
-    # If there are no submodules, nothing to do
-    if not os.path.isfile(submodule_path):
-        return paths
-    # Append path to valid_paths that don't contain a sub-repo
-    valid_paths = []
-    f = open(submodule_path, "r")
-    submodules = re.findall(r"path = (.*)", f.read())
-    for path in paths:
-        # If any of the path parts name don't match a submodule repo, add it:
-        if len([directory for directory in path.split('/') if directory in submodules]) == 0:
-            valid_paths.append(path)
-    return valid_paths        
 
 def getSingleFileFromName(name: str, rootdir: str) -> str:
     # From your current dir, find all the files with this name:
     recursive_path = os.path.abspath(os.path.join(rootdir, "**", name))
     possible_paths = glob.glob(recursive_path, recursive=True)
-    # If any are in a sub-repo/submodule, ignore it. (They might have their *own* config):
-    possible_paths = removeSubmodulePaths(possible_paths, rootdir)
     # Make sure you got only found one config:
     assert len(possible_paths) == 1, f"WRONG NUMBER OF FILES: Must have exactly one '{name}' file inside project. Found {len(possible_paths)} instead.\nBase path used to find files: {recursive_path}."
     return possible_paths[0]

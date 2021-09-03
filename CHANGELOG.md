@@ -28,10 +28,13 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ------
 
-## [version](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.0.0...v1.0.1)
+## [v1.1.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.0.0...v1.1.0)
 
 ### Changed:
 - Improved error checking and error messages, for misformed yml tests and `test_types`.
+
+### Removed:
+- Removed automatically ignoring git submodules. Can only ignore files loaded by this plugin and not vanilla pytest tests anyways, so switching to pytest's `--ignore <dir>` flag for this functionality.
 
 ------
 

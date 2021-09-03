@@ -39,7 +39,7 @@ python3 -m pip install pytest-automation
 
 ### 2) Add both required files
 
-It doesn't matter where in your project these exist, but names are case-sensitive, and *exactly* one of each can exist.
+It doesn't matter where in your project these exist, but names are case-sensitive, and *exactly* one of each can exist. If you need to ignore a sub-directory with it's own pytest suite, use `--ignore <dir>` (More info [here](#common-pytest-cli-args)).
 
 - #### **pytest-config.yml**
 
@@ -269,7 +269,7 @@ pytest <pytest and plugin args here> <PATH> <custom args here>
 # Example:
 pytest -n auto -s -tb short --df known_bugs . --api devel
 ```
-- **Common pytest CLI args**:
+- #### **Common pytest CLI args**:
    - '`-n` INT' => The number of threads to use. Make sure tests are thread-safe. (Default = 1, install pytest-xdist to use).
 
    - '`-s`' => If python prints anything, show it to your console.
@@ -278,9 +278,11 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
 
    - (`-v`|`-vv`|`-vvv`) => How much info to print for each test
 
-   - `--tb` ("short" | "long" | ...) => How much error to print, when a test fails. (Other options available, more info [here (ext link)](https://docs.pytest.org/en/6.2.x/usage.html#modifying-python-traceback-printing))
+   - '`--tb` ("short" | "long" | ...)' => How much error to print, when a test fails. (Other options available, more info [here (ext link)](https://docs.pytest.org/en/6.2.x/usage.html#modifying-python-traceback-printing))
 
-- **Plugin CLI args (Filter what tests to run)**:
+   - '`--ignore` DIR' => Ignore this directory from your suite. Works both with vanilla pytest tests, and pytest-automation files. Useful if you pull another repo into yours, and it has it's own test suite. (More info [here (ext link)](https://docs.pytest.org/en/6.2.x/example/pythoncollection.html#ignore-paths-during-test-collection)).
+
+- #### **Plugin CLI args (Filter what tests to run)**:
     - '`--only-run-name`, `--dont-run-name`' (--on/--dn) => (Can use multiple times) Looks at the name of each test to determine if it needs to run.
 
     - '`--only-run-file`', '`--dont-run-file`' (--of/--df) => (Can use multiple times) Determines if ALL tests in a file gets skipped, based on name of file. (Full name of file, but *not* the path).
@@ -289,12 +291,12 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
 
     - '`skip-all`': Skips all pytest-automation yaml tests. (Doesn't skip vanilla pytest methods).
 
-- **PATH**:
+-  #### **PATH**:
     - The path to start collecting tests / `conftest.py` files from.
 
     - Normally just "." for current dir. (i.e. 'pyest . ')
 
-- **Custom CLI args**:
+- #### **Custom CLI args**:
 
     Any arguments **you** define in your projects `conftest.py` file. More info [here](#adding-cli-options).
 
