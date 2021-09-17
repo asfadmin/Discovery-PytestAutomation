@@ -19,7 +19,7 @@ def pytest_sessionstart(session: Session) -> None:
     savePytestConfigInfo(test_types_info)
 
 
-## Custom CLI options: 
+# Custom CLI options:
 def pytest_addoption(parser: Parser) -> None:
     group = parser.getgroup('PytestAutomation')
     group.addoption("--only-run-name", "--on", action="append", default=None,

@@ -1,7 +1,6 @@
-import os           # path, getcwd
+import os           # path
 import sys          # path
 import yaml         # safe_load, YAMLError
-import re           # findall
 import glob         # glob
 import importlib    # import_module
 import pytest       # skip
