@@ -319,6 +319,7 @@ virtualenv --python=python3 ~/PytestAuto-env
 # Jump inside it. (You'll need to run this for each new shell)
 source ~/PytestAuto-env/bin/activate
 ```
+
  - You should see your terminal start with "(PytestAuto-env)" now.
 
 #### 2) Install the required files to build:
