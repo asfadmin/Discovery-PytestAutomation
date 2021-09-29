@@ -6,7 +6,7 @@ import importlib    # import_module
 import pytest       # skip
 import warnings     # warn
 
-# For type hints:
+# For type hints only:
 from typing import Union
 from types import ModuleType
 from _pytest.config import Config
