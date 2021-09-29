@@ -36,6 +36,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed:
 - Removed automatically ignoring git submodules. Can only ignore files loaded by this plugin and not vanilla pytest tests anyways, so switching to pytest's `--ignore <dir>` flag for this functionality.
 
+- Figured out how to remove the single global statement, by changing how each file imports one another.
+
 ------
 
 ## [v1.0.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v0.0.1...v1.0.0)
