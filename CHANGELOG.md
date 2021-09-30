@@ -33,6 +33,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed:
 - Improved error checking and error messages, for misformed yml tests and `test_types`. Removed the extra warning when plugin collects an empty test_*.yml file.
 
+- Moved code to figure out version, from `setup.py` to `automation/__init__.py`. This lets me populate `__version__` from there.
+
 ### Removed:
 - Removed automatically ignoring git submodules. Can only ignore files loaded by this plugin and not vanilla pytest tests anyways, so switching to pytest's `--ignore <dir>` flag for this functionality.
 
