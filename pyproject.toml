@@ -9,6 +9,6 @@ requires = [
 ]
 
 # Same as declaring use_scm_version in setup.py, but avoids
-# "Unknown distribution option: 'use_scm_version'"
+# "UserWarning: Unknown distribution option: 'use_scm_version'"
 # if setuptools_scm isn't installed when setup.py is called:
 [tool.setuptools_scm]
