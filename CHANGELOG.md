@@ -31,7 +31,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [v1.1.2](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.0...v1.1.2)
 
 ### Fixed:
-- Populate `__version__` with importlib instead of setuptools_scm, to let people use package without git. Also removes setuptools dependancy after build.
+- Populate `__version__` with importlib instead of setuptools_scm, to let people use package without git. Also removes setuptools dependency after build.
 
 ## [v1.1.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.0.0...v1.1.0)
 
