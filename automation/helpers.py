@@ -1,38 +1,21 @@
-import os           # path, getcwd
+import os           # path
 import sys          # path
 import yaml         # safe_load, YAMLError
-import re           # findall
 import glob         # glob
 import importlib    # import_module
 import pytest       # skip
 import warnings     # warn
 
-# For type hints:
+# For type hints only:
 from typing import Union
 from types import ModuleType
 from _pytest.config import Config
 
-def removeSubmodulePaths(paths: list, rootdir: str) -> list:
-    submodule_path = os.path.join(rootdir, ".gitmodules")
-    # If there are no submodules, nothing to do
-    if not os.path.isfile(submodule_path):
-        return paths
-    # Append path to valid_paths that don't contain a sub-repo
-    valid_paths = []
-    f = open(submodule_path, "r")
-    submodules = re.findall(r"path = (.*)", f.read())
-    for path in paths:
-        # If any of the path parts name don't match a submodule repo, add it:
-        if len([directory for directory in path.split('/') if directory in submodules]) == 0:
-            valid_paths.append(path)
-    return valid_paths        
 
 def getSingleFileFromName(name: str, rootdir: str) -> str:
     # From your current dir, find all the files with this name:
     recursive_path = os.path.abspath(os.path.join(rootdir, "**", name))
     possible_paths = glob.glob(recursive_path, recursive=True)
-    # If any are in a sub-repo/submodule, ignore it. (They might have their *own* config):
-    possible_paths = removeSubmodulePaths(possible_paths, rootdir)
     # Make sure you got only found one config:
     assert len(possible_paths) == 1, f"WRONG NUMBER OF FILES: Must have exactly one '{name}' file inside project. Found {len(possible_paths)} instead.\nBase path used to find files: {recursive_path}."
     return possible_paths[0]
@@ -64,16 +47,19 @@ def loadYamlFile(path: str, required: bool=False) -> Union[list,dict,None]:
         warnings.warn(UserWarning(error_msg))
     return yaml_dict
 
-## Given "key: val", returns key, val:
+## Given "key1: {key2: val}", returns -> {key2: val, 'title': key1} to keep everything top-level
 #    Usefull with "title: {test dict}" senarios
-#    file to report error if something's not formated
-def seperateKeyVal(mydict: dict, file: str) -> dict:
-    num_test_titles = len(list(mydict.keys()))
-    assert num_test_titles == 1, f"MISFORMATTED TEST: {num_test_titles} keys found in a test. Only have 1, the title of the test. File: '{file}'."
-    # return the individual key/val
-    title, test_info = next(iter( mydict.items() ))
+#    file and dict_desc for error reporting if something's not formated correctly
+def seperateKeyVal(to_seperate: dict, file: str, dict_desc: str) -> dict:
+    dict_desc = dict_desc.upper()
+    num_test_titles = len(list(to_seperate.keys()))
+    assert num_test_titles == 1, f"MISFORMATTED {dict_desc}: {num_test_titles} keys found in a {dict_desc.lower()}. Only have 1, the title of the test. File: '{file}'."
+    # Seperate the key and val, to opperate on each individually
+    title, test_info = next(iter( to_seperate.items() ))
+    # Make sure the value 'test_info' is a dict, not a list or anything:
+    assert isinstance(test_info, type({})), f"MISFORMATED {dict_desc}: Contents of {dict_desc.lower()} '{title}' is not a dict, can't collaps test correctly. File: '{file}'."
     # Make sure the title key isn't in use already, it's reserved:
-    assert "title" not in test_info, f"MISFORMATTED TEST: 'title' key found in test '{title}'. This key is reserved for internal use only. File: '{file}'."
+    assert "title" not in test_info, f"MISFORMATTED {dict_desc}: 'title' key found in {dict_desc.lower()} '{title}'. This key is reserved for internal use only. File: '{file}'."
     # Save title to test_info. (Might seem reduntant, but this gets all test_info keys at base level, AND still saves the test title)
     test_info["title"] = title
     return test_info
@@ -147,13 +133,13 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str) -> dict:
     assert "test_types" in pytest_config_info, "CONFIG ERROR: Required key 'test_types' not found in 'pytest-config.yml'."
     assert isinstance(pytest_config_info["test_types"], type([])), f"CONFIG ERROR: 'test_types' must be a list inside 'pytest-config.yml'. (Currently type: {type(pytest_config_info['test_types'])})."
 
-    list_of_tests = pytest_config_info["test_types"]
+    list_of_test_types = pytest_config_info["test_types"]
 
     pytest_managers_module = getPytestManagerModule(pytest_managers_path)
 
     # Time to load the tests inside the config:
-    for ii, test_config in enumerate(list_of_tests):
-        test_info = seperateKeyVal(test_config, "pytest-config.yml")
+    for ii, test_type_config in enumerate(list_of_test_types):
+        test_info = seperateKeyVal(test_type_config, pytest_config_path, "test type")
 
         # If "required_keys" or "required_files" field contain one item, turn into list of that one item:
         if "required_keys" in test_info and not isinstance(test_info["required_keys"], type([])):
@@ -161,11 +147,11 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str) -> dict:
         if "required_files" in test_info and not isinstance(test_info["required_files"], type([])):
             test_info["required_files"] = [test_info["required_files"]]
         # If neither are used, AND you have tests after this one, warn that those tests can't be reached:
-        if "required_keys" not in test_info and "required_files" not in test_info and ii < (len(list_of_tests)-1):
+        if "required_keys" not in test_info and "required_files" not in test_info and ii < (len(list_of_test_types)-1):
             warnings.warn(UserWarning(f"Test type found without required_keys AND required_files used, but there are test types after this one. Tests can't pass '{test_info['title']}' and run on those."))
 
         # Make sure test_info has required keys:
-        assert "method" in test_info, f"CONFIG ERROR: Required key 'method' not found in test '{test_info['title']}'. (pytest-config.yml)"
+        assert "method" in test_info, f"CONFIG ERROR: Required key 'method' not found in test '{test_info['title']}'. File: '{pytest_config_path}'."
 
         # Import the method inside the module:
         try:
@@ -177,5 +163,5 @@ def loadTestTypes(pytest_managers_path: str, pytest_config_path: str) -> dict:
         if "variables" not in test_info:
             test_info["variables"] = None
         # Save it:
-        list_of_tests[ii] = test_info
+        list_of_test_types[ii] = test_info
     return pytest_config_info

@@ -16,22 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      ## TODO: Make the test suite
-      # # Run the local test sutie action:
-      # - uses: ./.github/actions/pytest-automation
-      #   with:
-      #     PYTEST_OPTIONS: -n auto
-
-      # Actually push the package now:
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install setuptools wheel twine packaging
+          python3 -m pip install --upgrade pip build
 
-      - name: Build and publish
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      - name: Build package
         run: |
-          python3 setup.py sdist bdist_wheel
-          python3 -m twine upload dist/*
+          python3 -m build .
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@bea5cda687c2b79989126d589ef4411bedce0195
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}

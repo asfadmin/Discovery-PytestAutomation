@@ -1,0 +1,12 @@
+[metadata]
+name = "automation"
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=45",
+    "wheel",
+    "twine",
+    "setuptools_scm>=6.2",
+    "packaging>=21.0",
+]

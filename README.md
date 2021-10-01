@@ -39,13 +39,13 @@ python3 -m pip install pytest-automation
 
 ### 2) Add both required files
 
-It doesn't matter where in your project these exist, but names are case-sensitive, and *exactly* one of each can exist.
+It doesn't matter where in your project these exist, but names are case-sensitive, and **exactly** one of each should exist. If you need to ignore a sub-directory with it's own pytest suite, use `--ignore <dir>` (More info on ignoring [here](#common-pytest-cli-args)).
 
 - #### **pytest-config.yml**
 
-    This file defines where each individual [yml test](#3-write-the-yaml-tests) gets sent. You can choose based things like what dict keys are inside the test.
+    This file defines where each individual [yml test](#3-write-the-yaml-tests) gets sent, to which method in the [pytest-managers.py](#pytest-managerspy) file.
     
-    This allows you to have multiple types of tests in the same file. (Useful for example, having a test_known_bugs.yml you can exclude from pipelines).
+    This also allows you to have multiple types of tests in the same file. (Useful for example, having a test_known_bugs.yml you can exclude from pipelines).
 
     This file is required to have one `test_types` key. This holds a list, of each type of test (or `test type`) you'd like in your suite. Each element in the list, is in the format {"test title": {all_test_info}} (Shown in [this example](#pytest-configyml-example) below).
 
@@ -65,6 +65,7 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
         variables:
             throw_on_negative: False
     ```
+    Possible filters in each `test type`:
 
     - `required_keys`: The yml test must contain ALL these keys to run with this `test type`.
 
@@ -72,13 +73,13 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
     Each [yml test](#3-write-the-yaml-tests) will go through the `test_types` list *in order*, and the following things will happen:
 
-    - ONLY keys that are declared will be checked. You can have multiple `required_*` keys in the same `test type`, and they ALL have to match for the test to run.
+    - ONLY keys that are declared will be checked. Also you can have multiple `required_*` keys in the same `test type`, and they ALL have to match for the test to run.
 
         - Note: This means if it has *NO* `required_*` keys, ALL tests will match it, so *no* tests will continue pass that `test type`.
     
-    - The test is matched to that type, so the function under `method` will be looked for in [pytest-managers.py](#pytest-managerspy) and called.
+    - If the test is matched to that type, the function under `method` will be looked for in [pytest-managers.py](#pytest-managerspy) and called.
 
-    - If NO `test type` is found, that test will fail, and the next will run.
+    - If NO `test type` is matched, that test will fail, and the next will run.
 
     In the pytest-config [example](#pytest-configyml-example) above, the test_PythonsAddition will only be called, if that yml test contains both the x_add and y_add keys. With the test_NumpysFactor, it'll only be called if that yml test has the factor_num key, AND it's in the test_factorials.yml file.
 
@@ -91,11 +92,11 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
         throw_on_negative: False
     ```
 
-    This `variables` key is optional. It'll pass it's contents onto each yml test, under the `test_type_vars` param. This is useful for declaring url's, endpoints, etc. More info on what arguments get passed to the `method` [here](#args-passed-into-each-test).
+    This `variables` key is optional. It'll pass it's contents into each [pytest-managers](#pytest-managerspy) method, under the `test_type_vars` param. This is useful for declaring url's, endpoints, etc. More info on what arguments get passed to the `method` [here](#args-passed-into-each-test).
 
 - #### **pytest-managers.py**
 
-    When a yml test is matched with [test type](#pytest-configyml), that `method` is imported from this file, and ran.
+    When a [yml test](#3-write-the-yaml-tests) is matched with [test type](#pytest-configyml), that test type's `method` is imported from this file, and ran.
 
     #### **pytest-managers.py example**
     ```python
@@ -107,28 +108,28 @@ It doesn't matter where in your project these exist, but names are case-sensitiv
 
     def test_PythonsAddition(**args):
 	    run_add_test(**args)
-        # Or just run test here:
+        # *OR* just run test here:
         test_info = args["test_info"]
         assert test_info["x_add"] + test_info["y_add"] == test_info["answer"]
 
     def test_NumpysFactor(**args):
         run_fact_test(**args)
-        # Or just run test here:
+        # *OR* just run test here:
         test_factor = args["test_info"]["factor_num"]
         assert factor(test_factor) == args["test_info"]["answer"]
     ```
 
-    Like with this example, it's *recommended* to have the testing code in another file, and call it from this one. This helps keeps the suite organized for larger tests. Even if you import other methods, ONLY the methods defined in this file can be loaded from the `method` key in [pytest-config.yml](#pytest-configyml)
+    Like with the first line of each method, it's *recommended* to have the testing code in another file, and just call it from this one. This helps keeps the suite organized for longer test methods. Even if you import other methods, ONLY the methods defined in this file can be loaded from the `method` key in [pytest-config.yml](#pytest-configyml).
 
     #### **Args passed into each Test**
 
     Each test in pytest-managers.py should only accept `**args` as their one param. That'll allow the plugin to add extra keys in the future, without breaking older tests. The following keys are currently guaranteed:
 
-    - **`config`**: A [pytest config (ext link)](https://docs.pytest.org/en/6.2.x/reference.html?highlight=config#config) object. For interacting with pytest (i.e getting [cli options](#adding-cli-options) used when running suite)
+    - **`config`**: A [pytest config (ext link)](https://docs.pytest.org/en/6.2.x/reference.html?highlight=config#config) object. For interacting with pytest itself (i.e getting which [cli options](#adding-cli-options) were used when running the suite)
 
     - **`test_info`**: The parameters from the yml file. This is passed into the python manager, and what makes each test unique. More info [here](#3-write-the-yaml-tests).
 
-    - **`test_type_vars`**: How to declare variables for a [test type](#pytest-configyml), and not have to hard code them. More info [here](#test-type-variables).
+    - **`test_type_vars`**: How to declare variables for a [test type](#pytest-configyml), and not have them hard-coded/duplicated in each test. (i.e. what api endpoint to target). More info [here](#test-type-variables).
 
 ### 3) Write the yaml tests
 
@@ -196,12 +197,11 @@ The fourth test gets matched to the addition `test type`, so it runs with that `
 
 #### **yaml test philosophy**:
 
-One key idea behind organizing tests into yamls, is you can move each individual yml test between files, and it'll still behave as expected.
+One key idea behind organizing tests into yamls, is you can move each individual yml test between files, and the test will still behave as expected.
 
 - This means you can have "test_known_bugs.yml" to exclude from build pipelines, or "test_prod_only.yml" that only gets executed against your prod environment. etc.
 
-- This also means we can't run tests based on what file they're in, each `test type` can only look at the yml test itself to decide if it runs it.
-
+- This also means we can't decide which `test type` to run a test with, based on what file it's in. Otherwise, as soon as you moved a test from this file, to "known_bugs.yml", it's behavior might change. 
 
 ### 4) Using `conftest.py` for extra Flexibility
 
@@ -243,7 +243,7 @@ Add the [pytest_sessionstart (ext link)](https://docs.pytest.org/en/6.2.x/refere
 # Contents of conftest.py
 
 def pytest_sessionstart(session):
-    # If you have a directory for dumping temp files:
+    # Maybe you need a directory for dumping temp files:
     temp_dir = "some/tmp/dir"
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
@@ -265,36 +265,41 @@ You can find the full list [here (ext link)](https://docs.pytest.org/en/6.2.x/re
 ### **Running the Tests**:
 
 ```bash
-pytest <pytest and plugin args here> <PATH> <custom args here>
+pytest <pytest and plugin args here> <PATH> <custom conftest args here>
 # Example:
 pytest -n auto -s -tb short --df known_bugs . --api devel
 ```
-- **Common pytest CLI args**:
-   - '`-n` INT' => The number of threads to use. Make sure tests are thread-safe. (Default = 1, install pytest-xdist to use).
+- #### **Common pytest CLI args**:
+   - `-n int` => The number of threads to use. Make sure tests are thread-safe. (Default = 1, install [pytest-xdist (ext link)](https://pypi.org/project/pytest-xdist/) to use).
 
-   - '`-s`' => If python prints anything, show it to your console.
+   - `-s` => If python prints anything, show it to your console.
 
-   - '`-x`' => Quit as soon as the first test fails
+   - `-x` => Quit as soon as the first test fails
 
    - (`-v`|`-vv`|`-vvv`) => How much info to print for each test
 
-   - `--tb` ("short" | "long" | ...) => How much error to print, when a test fails. (Other options available, more info [here (ext link)](https://docs.pytest.org/en/6.2.x/usage.html#modifying-python-traceback-printing))
+   - `--tb ("short" | "long" | ...)` => How much error to print, when a test fails. (Other options available, more info [here (ext link)](https://docs.pytest.org/en/6.2.x/usage.html#modifying-python-traceback-printing))
 
-- **Plugin CLI args (Filter what tests to run)**:
-    - '`--only-run-name`, `--dont-run-name`' (--on/--dn) => (Can use multiple times) Looks at the name of each test to determine if it needs to run.
+   - `--ignore DIR` => Ignore this directory from your suite. Works both with vanilla pytest tests, and pytest-automation files. Useful if you pull another repo into yours, and it has it's own test suite. (More info [here (ext link)](https://docs.pytest.org/en/6.2.x/example/pythoncollection.html#ignore-paths-during-test-collection)).
 
-    - '`--only-run-file`', '`--dont-run-file`' (--of/--df) => (Can use multiple times) Determines if ALL tests in a file gets skipped, based on name of file. (Full name of file, but *not* the path).
+- #### **Custom pytest-automation args**:
 
-    - '`--only-run-type`', '`--dont-run-type`' (--ot/--dt) => (Can use multiple times) Looks at the title in pytest-config.yml. Tries to see if what is passed to these, is within the title.
+    Filter what tests to run:
 
-    - '`skip-all`': Skips all pytest-automation yaml tests. (Doesn't skip vanilla pytest methods).
+    - `--only-run-name str`, `--dont-run-name str` (`--on str`/`--dn str`) => (Can use multiple times) If the name of the test *contains* this value, only/don't run accordingly.
 
-- **PATH**:
+    - `--only-run-file str`, `--dont-run-file str` (`--of str`/`--df str`) => (Can use multiple times) If the file the test is in *contains* this value, only/don't run accordingly.
+
+    - `--only-run-type str`, `--dont-run-type str` (`--ot str`/`--dt str`) => (Can use multiple times) Looks at the title in [pytest-config.yml](#pytest-configyml-example), and if it *contains* this value, only/don't run accordingly.
+
+    - `skip-all`: Skips all pytest-automation yaml tests. (Doesn't skip vanilla pytest methods).
+
+-  #### **PATH**:
     - The path to start collecting tests / `conftest.py` files from.
 
-    - Normally just "." for current dir. (i.e. 'pyest . ')
+    - Normally just "." for current directory. (i.e. 'pyest . ')
 
-- **Custom CLI args**:
+- #### **Custom conftest CLI args**:
 
     Any arguments **you** define in your projects `conftest.py` file. More info [here](#adding-cli-options).
 
@@ -306,14 +311,15 @@ pytest -n auto -s -tb short --df known_bugs . --api devel
 
 ```bash
 # Upgrade pip to latest and greatest
-python -m pip install --upgrade pip
+python3 -m pip install --upgrade pip
 # Install tool for creating environments
 python3 -m pip install virtualenv
 # Create the environment
 virtualenv --python=python3 ~/PytestAuto-env
-# Jump inside it. (You'll need to do this for each new shell)
+# Jump inside it. (You'll need to run this for each new shell)
 source ~/PytestAuto-env/bin/activate
 ```
+
  - You should see your terminal start with "(PytestAuto-env)" now.
 
 #### 2) Install the required files to build:
@@ -330,8 +336,8 @@ source ~/PytestAuto-env/bin/activate
 - Or run this after each change to the source.
 
 ```bash
-# NOTE: The --upgrade is needed for if you install
-# it multiple times. (Don't use cached version).
+# NOTE: The "--upgrade" is needed incase it's already installed.
+#  (i.e. Don't use cached version).
 python -m pip install --upgrade <Path-to-this-repo-root>
 ```
 

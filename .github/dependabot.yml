@@ -6,4 +6,4 @@ updates:
       interval: daily
     open-pull-requests-limit: 6
     labels: ['bot created']
-    target-branch: stable
+    target-branch: main
