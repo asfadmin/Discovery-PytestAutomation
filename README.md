@@ -1,6 +1,6 @@
 # Pytest Automation
 
-[![image](https://img.shields.io/pypi/v/pytest-automation.svg)](https://pypi.python.org/pypi/pytest-automation)
+[![image](https://img.shields.io/pypi/v/pytest-automation.svg)](https://pypi.python.org/pypi/pytest-automation) [![CodeFactor](https://www.codefactor.io/repository/github/asfadmin/discovery-pytestautomation/badge/stable)](https://www.codefactor.io/repository/github/asfadmin/discovery-pytestautomation/overview/stable)
 
 For automating test creation. This plugin lets you send a list of tests (arguments defined in yaml's), to python methods. For creating an agile test suite.
 
