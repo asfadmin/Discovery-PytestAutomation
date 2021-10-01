@@ -6,4 +6,3 @@ try:
     __version__ = str(Version(get_version()))
 except InvalidVersion:
     __version__ = "0.0.0"
-

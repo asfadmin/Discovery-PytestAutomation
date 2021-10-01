@@ -23,7 +23,7 @@ jobs:
       - name: Build package
         run: |
           python3 -m build .
-      
+
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@bea5cda687c2b79989126d589ef4411bedce0195
         with:
