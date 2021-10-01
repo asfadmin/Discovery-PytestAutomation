@@ -1,12 +1,10 @@
 import setuptools
-# from automation import __version__
 
 with open("README.md", "r") as f:
     long_description = f.read()
 
 setuptools.setup(
     name="pytest-automation",
-    # version=__version__,
     use_scm_version=True,
     description="pytest plugin for building a test suite, using YAML files to extend pytest parameterize functionality.",
     long_description=long_description,
@@ -33,7 +31,6 @@ setuptools.setup(
     install_requires=[
         'pytest',
         'PyYAML',
-        'setuptools_scm',
     ],
     license='BSD',
     license_files=('LICENSE',),

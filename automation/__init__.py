@@ -1,8 +1,7 @@
-from packaging.version import Version, InvalidVersion
-from setuptools_scm import get_version
+from importlib.metadata import version, PackageNotFoundError
 
 try:
-    # This guarantees it to be PEP 440 compliant. (Which sometimes, git creates a non-compliant version)
-    __version__ = str(Version(get_version()))
-except InvalidVersion:
+    # Get the version (If developing, can be like 1.0.1.dev23+g28a5b36.d20211001)
+    __version__ = version("pytest-automation")
+except PackageNotFoundError:
     __version__ = "0.0.0"
