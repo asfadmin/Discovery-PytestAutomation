@@ -33,6 +33,7 @@ setuptools.setup(
     install_requires=[
         'pytest',
         'PyYAML',
+        'setuptools_scm',
     ],
     license='BSD',
     license_files=('LICENSE',),

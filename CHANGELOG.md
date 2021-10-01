@@ -10,7 +10,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 <!--
 ## Example template!!
 
-## [version](https://github.com/asfadmin/Discovery-PytestAutomation/compare/vOLD...vNEW)
+## [v<VERSION>](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v<OLD>...v<NEW>)
 
 ### Added:
 -
@@ -27,6 +27,11 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 -->
 
 ------
+
+## [v1.1.1](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.0...v1.1.1)
+
+### Fixed:
+- Added setuptools_scm as an required package, to populate `__version__`.
 
 ## [v1.1.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.0.0...v1.1.0)
 
