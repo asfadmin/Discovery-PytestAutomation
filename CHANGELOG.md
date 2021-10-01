@@ -28,6 +28,13 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ------
 
+## [vNEXT](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.2...vUNKNOWN)
+
+### Fixed:
+- UserWarning: Unknown distribution option: 'use_scm_version', by declaring it in pyproject.toml instead.
+
+------
+
 ## [v1.1.2](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.0...v1.1.2)
 
 ### Fixed:
