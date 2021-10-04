@@ -322,14 +322,15 @@ source ~/PytestAuto-env/bin/activate
 
  - You should see your terminal start with "(PytestAuto-env)" now.
 
-#### 2) Install the required files to build:
+#### 2) Install the required packages:
 
- ```bash
- # Because of the --python=python3 above, you can now just run 'python':
- python -m pip install setuptools wheel twine packaging
- # Install the files needed to run setup.py:
- python -m pip install <Path-to-this-repo-root>/requirements.txt
- ```
+```bash
+# Because of the --python=python3 above, you can now just run 'python'
+# Install the packages needed to run setup.py:
+python -m pip install <Path-to-this-repo-root>
+# OR if you want to run the test suite:
+python -m pip install <Path-to-this-repo-root>/requirements.txt
+```
 
 #### 3) Install it:
 

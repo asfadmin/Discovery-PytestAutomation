@@ -33,6 +33,9 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed:
 - UserWarning: Unknown distribution option: 'use_scm_version', by declaring it in pyproject.toml instead.
 
+### Removed:
+- Removed `packaging` package from pyproject.toml, and requirements.txt
+
 ------
 
 ## [v1.1.2](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.0...v1.1.2)
