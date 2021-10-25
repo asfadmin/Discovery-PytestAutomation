@@ -6,4 +6,4 @@ pyparsing==2.4.7
 pytest==6.2.5
 PyYAML==6.0
 toml==0.10.2
-tomli==1.2.1
+tomli==1.2.2
