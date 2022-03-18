@@ -3,7 +3,7 @@ iniconfig==1.1.1
 pluggy==1.0.0
 py==1.10.0
 pyparsing==2.4.7
-pytest==6.2.5
+pytest==7.1.1
 PyYAML==6.0
 toml==0.10.2
 tomli==1.2.1
