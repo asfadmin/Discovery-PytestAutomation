@@ -1,6 +1,8 @@
 from automation import yamlfile # Import WHOLE file, to include it's namespace for "PYTEST_CONFIG_INFO" var
 from automation import helpers
 
+import pathlib
+
 # For type hints only:
 from pytest import Session, File
 from _pytest.config.argparsing import Parser
@@ -40,4 +42,4 @@ def pytest_addoption(parser: Parser) -> None:
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
 def pytest_collect_file(parent: Collector, path: LocalPath) -> File:
     if path.ext in [".yml", ".yaml"] and path.basename.startswith("test_"):
-        return yamlfile.YamlFile.from_parent(parent, fspath=path)
+        return yamlfile.YamlFile.from_parent(parent, path=pathlib.Path(path))
