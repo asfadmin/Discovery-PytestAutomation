@@ -28,7 +28,7 @@ setuptools.setup(
         "Topic :: Software Development :: Testing"
     ],
     install_requires=[
-        'pytest',
+        'pytest>=7.0.0',
         'PyYAML',
     ],
     license='BSD',
