@@ -35,6 +35,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed:
 - UserWarning: Unknown distribution option: 'use_scm_version', by declaring it in pyproject.toml instead.
+- Stopped plugin from searching for `pytest-managers.py` and `pytest-config.yml`, in directories that match [pytest's norecursedirs](https://docs.pytest.org/en/6.2.x/reference.html?highlight=norecursedirs#confval-norecursedirs) config variable. This stops a duplicate `pytest-managers.py` in `build`, from halting the entire suite for example.
 - Updated packages in `requirements.txt` to latest and greatest. Checked nothing broke from doing so.
 
 ### Removed:
