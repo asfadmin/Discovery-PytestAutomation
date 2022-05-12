@@ -11,14 +11,37 @@ from typing import Union
 from types import ModuleType
 from _pytest.config import Config
 
+import os
+import re
+import fnmatch
 
-def getSingleFileFromName(name: str, rootdir: str) -> str:
+# Returns true if any "section" (any part between /, "section1/section2/..."),
+# matches any pattern.
+#   For finding if an "excluded" directory exists in a path, so you can remove the path
+#   from the list.
+def pathSectionContainsPattern(path: str, patterns: list=["*"]) -> bool:
+    # Turn /my/cool/file.txt into ["my", "cool", "file.txt"]
+    path_list = os.path.normpath(path).split(os.path.sep)
+    # If path started with whatever seperator, it has a empty "" at the beginning:
+    if path.startswith(os.path.sep):
+        path_list = path_list[1:]
+    # Go through each pattern, and see if it matches something in the path:   
+    for path_part in path_list:
+        for pattern in patterns:
+            if fnmatch.fnmatchcase(path_part, pattern):
+                return True
+    return False
+
+def getSingleFileFromName(name: str, rootdir: str, norecursedirs: list=[]) -> str:
     # From your current dir, find all the files with this name:
     recursive_path = os.path.abspath(os.path.join(rootdir, "**", name))
     possible_paths = glob.glob(recursive_path, recursive=True)
+    # Remove the paths from before the root directory, so they don't get looked at:
+    possible_paths = [os.path.relpath(path, rootdir) for path in possible_paths]
+    filtered_paths = [path for path in possible_paths if not pathSectionContainsPattern(path, norecursedirs)]
     # Make sure you got only found one config:
-    assert len(possible_paths) == 1, f"WRONG NUMBER OF FILES: Must have exactly one '{name}' file inside project. Found {len(possible_paths)} instead.\nBase path used to find files: {recursive_path}."
-    return possible_paths[0]
+    assert len(filtered_paths) == 1, f"WRONG NUMBER OF FILES: Must have exactly one '{name}' file inside project.\nBase path used to find files: {recursive_path}."
+    return filtered_paths[0]
 
 ## Open yml/yaml File:
 #    Opens it and returns contents, or None if problems happen

@@ -11,15 +11,16 @@ from _pytest.nodes import Collector
 
 # Runs once at the start of everything:
 def pytest_sessionstart(session: Session) -> None:
+    # Save where NOT to recurse into when searching
+    norecursedirs = session.config.getini('norecursedirs')
     # Figure out where core files are in project
-    pytest_config_path = helpers.getSingleFileFromName("pytest-config.yml", rootdir=session.config.rootdir)
-    pytest_managers_path = helpers.getSingleFileFromName("pytest-managers.py", rootdir=session.config.rootdir)
+    pytest_config_path = helpers.getSingleFileFromName("pytest-config.yml", rootdir=session.config.rootdir, norecursedirs=norecursedirs)
+    pytest_managers_path = helpers.getSingleFileFromName("pytest-managers.py", rootdir=session.config.rootdir, norecursedirs=norecursedirs)
     # Load info from said core files:
     test_types_info = helpers.loadTestTypes(pytest_config_path=pytest_config_path, pytest_managers_path=pytest_managers_path)
 
     # Save info, to use with each test:
     yamlfile.PYTEST_CONFIG_INFO = test_types_info
-
 
 # Custom CLI options:
 def pytest_addoption(parser: Parser) -> None:
