@@ -31,7 +31,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [v2.0.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.2...v2.0.0)
 
 ### Breaking Change:
-- Upgraded to pytest-7, which included [this deprecation](https://docs.pytest.org/en/7.0.x/deprecations.html#fspath-argument-for-node-constructors-replaced-with-pathlib-path). **Plugin will now only work with pytest>=7**.
+- Upgraded to pytest-7, which included [this deprecation](https://docs.pytest.org/en/7.0.x/deprecations.html#fspath-argument-for-node-constructors-replaced-with-pathlib-path). **Plugin will now only work with pytest>=7.0.0**.
 
 ### Fixed:
 - UserWarning: Unknown distribution option: 'use_scm_version', by declaring it in pyproject.toml instead.
