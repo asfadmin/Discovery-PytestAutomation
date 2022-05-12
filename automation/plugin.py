@@ -10,6 +10,7 @@ from py._path.local import LocalPath
 from _pytest.nodes import Collector
 
 # Runs once at the start of everything:
+# pylint: disable=fixme
 #   TODO: Move this to a hook *after* `pytest_collect_file` runs. Can have the collect_file hook look for pytest-config/pytest-managers,
 #   to automatically include the norecursedirs logic when searching for them.
 #   - From here (https://github.com/pytest-dev/pytest/issues/3261#issuecomment-369740536), seems like `pytest_runtestloop` would be the
