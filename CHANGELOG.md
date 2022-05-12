@@ -28,6 +28,21 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ------
 
+## [v2.0.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.2...v2.0.0)
+
+### Breaking Change:
+- Upgraded to pytest-7, which included [this deprecation](https://docs.pytest.org/en/7.0.x/deprecations.html#fspath-argument-for-node-constructors-replaced-with-pathlib-path). **Plugin will now only work with pytest>=7.0.0**.
+
+### Fixed:
+- UserWarning: Unknown distribution option: 'use_scm_version', by declaring it in pyproject.toml instead.
+- Stopped plugin from searching for `pytest-managers.py` and `pytest-config.yml`, in directories that match [pytest's norecursedirs](https://docs.pytest.org/en/6.2.x/reference.html?highlight=norecursedirs#confval-norecursedirs) config variable. This stops a duplicate `pytest-managers.py` in `build`, from halting the entire suite for example.
+- Updated packages in `requirements.txt` to latest and greatest. Checked nothing broke from doing so.
+
+### Removed:
+- Removed `packaging` package from pyproject.toml, and requirements.txt
+
+------
+
 ## [v1.1.2](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.0...v1.1.2)
 
 ### Fixed:

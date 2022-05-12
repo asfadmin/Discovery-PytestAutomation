@@ -12,25 +12,25 @@ PYTEST_CONFIG_INFO = {} # Populated in automation.plugin.pytest_sessionstart()
 
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
 class YamlFile(pytest.File):
-    ## Default init used. Declared: self.parent, self.fspath
+    ## Default init used. Declared: self.parent, self.path
 
     def get_file_name(self) -> str:
-        return os.path.basename(self.fspath)
+        return os.path.basename(self.path)
 
     def collect(self) -> Generator[pytest.Item, None, None]:
         # Load the data. (required=False to NOT throw if it can't read).
-        data = helpers.loadYamlFile(self.fspath, required=False)
+        data = helpers.loadYamlFile(self.path, required=False)
 
         # Make sure it has tests:
         if data is None:
             return
         if "tests" not in data:
-            warnings.warn(UserWarning(f"File is missing required 'tests' key: '{self.fspath}'. Skipping."))
+            warnings.warn(UserWarning(f"File is missing required 'tests' key: '{self.path}'. Skipping."))
             return
 
         # Collect the tests into your suite:
         for json_test in data["tests"]:
-            test_info = helpers.seperateKeyVal(json_test, self.fspath, "test")
+            test_info = helpers.seperateKeyVal(json_test, self.path, "test")
             yield YamlItem.from_parent(self, test_info=test_info)
 
 class YamlItem(pytest.Item):

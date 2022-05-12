@@ -5,7 +5,6 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
     name="pytest-automation",
-    use_scm_version=True,
     description="pytest plugin for building a test suite, using YAML files to extend pytest parameterize functionality.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -29,7 +28,7 @@ setuptools.setup(
         "Topic :: Software Development :: Testing"
     ],
     install_requires=[
-        'pytest',
+        'pytest>=7.0.0',
         'PyYAML',
     ],
     license='BSD',

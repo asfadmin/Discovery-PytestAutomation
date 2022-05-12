@@ -1,6 +1,6 @@
 # Pytest Automation
 
-[![image](https://img.shields.io/pypi/v/pytest-automation.svg)](https://pypi.python.org/pypi/pytest-automation) [![CodeFactor](https://www.codefactor.io/repository/github/asfadmin/discovery-pytestautomation/badge/stable)](https://www.codefactor.io/repository/github/asfadmin/discovery-pytestautomation/overview/stable)
+[![image](https://img.shields.io/pypi/v/pytest-automation.svg)](https://pypi.python.org/pypi/pytest-automation) [![CodeFactor](https://www.codefactor.io/repository/github/asfadmin/discovery-pytestautomation/badge/stable)](https://www.codefactor.io/repository/github/asfadmin/discovery-pytestautomation/overview/stable) [![Join the chat at https://gitter.im/ASFDiscovery/pytest-automation](https://badges.gitter.im/ASFDiscovery/pytest-automation.svg)](https://gitter.im/ASFDiscovery/pytest-automation?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 For automating test creation. This plugin lets you send a list of tests (arguments defined in yaml's), to python methods. For creating an agile test suite.
 
@@ -322,14 +322,15 @@ source ~/PytestAuto-env/bin/activate
 
  - You should see your terminal start with "(PytestAuto-env)" now.
 
-#### 2) Install the required files to build:
+#### 2) Install the required packages:
 
- ```bash
- # Because of the --python=python3 above, you can now just run 'python':
- python -m pip install setuptools wheel twine packaging
- # Install the files needed to run setup.py:
- python -m pip install <Path-to-this-repo-root>/requirements.txt
- ```
+```bash
+# Because of the --python=python3 above, you can now just run 'python'
+# Install the packages needed to run setup.py:
+python -m pip install <Path-to-this-repo-root>
+# OR if you want to run the test suite:
+python -m pip install <Path-to-this-repo-root>/requirements.txt
+```
 
 #### 3) Install it:
 
