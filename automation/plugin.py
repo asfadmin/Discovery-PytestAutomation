@@ -10,6 +10,10 @@ from py._path.local import LocalPath
 from _pytest.nodes import Collector
 
 # Runs once at the start of everything:
+#   TODO: Move this to a hook *after* `pytest_collect_file` runs. Can have the collect_file hook look for pytest-config/pytest-managers,
+#   to automatically include the norecursedirs logic when searching for them.
+#   - From here (https://github.com/pytest-dev/pytest/issues/3261#issuecomment-369740536), seems like `pytest_runtestloop` would be the
+#   best hook to use. PROBLEM is pytest-xdist overrides it too, so need to find a way to run *BOTH* ours/theirs, and not just override.
 def pytest_sessionstart(session: Session) -> None:
     # Save where NOT to recurse into when searching
     norecursedirs = session.config.getini('norecursedirs')
