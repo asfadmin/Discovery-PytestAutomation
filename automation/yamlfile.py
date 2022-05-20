@@ -1,6 +1,7 @@
 import os # path
 import pytest # File, Item
 import warnings # warn
+import copy # copy
 
 from automation import helpers
 
@@ -56,7 +57,11 @@ class YamlItem(pytest.Item):
                 # Check if you're supposed to run it:
                 helpers.skipTestsIfNecessary(config=self.config, test_name=self.test_info["title"], file_name=self.file_name, test_type=self.test_type_name)
                 # Run the test!!!
-                poss_test_type["method_pointer"](test_info=self.test_info, config=self.config, test_type_vars=poss_test_type["variables"])
+                poss_test_type["method_pointer"](
+                    test_info=copy.copy(self.test_info),
+                    config=copy.copy(self.config),
+                    test_type_vars=copy.copy(poss_test_type["variables"]),
+                )
                 # You're done. Don't check ALL test types, only the FIRST match
                 break
         assert found_test, "TEST TYPE NOT FOUND: Could not find which 'test_types' element in pytest-config.yml to use with this test."
