@@ -28,6 +28,13 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ------
 
+## [v2.0.1](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v2.0.0...v2.0.1)
+
+### Fixed:
+- Pass **copies** of params into the test, so that they can't modify the params before `repr_failure` is called on test cleanup.
+
+------
+
 ## [v2.0.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v1.1.2...v2.0.0)
 
 ### Breaking Change:
