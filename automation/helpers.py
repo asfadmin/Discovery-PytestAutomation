@@ -12,7 +12,6 @@ from types import ModuleType
 from _pytest.config import Config
 
 import os
-import re
 import fnmatch
 
 # Returns true if any "section" (any part between /, "section1/section2/..."),
