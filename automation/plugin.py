@@ -6,7 +6,6 @@ import pathlib
 # For type hints only:
 from pytest import Session, File
 from _pytest.config.argparsing import Parser
-from py._path.local import LocalPath
 from _pytest.nodes import Collector
 
 # Runs once at the start of everything:
@@ -46,6 +45,8 @@ def pytest_addoption(parser: Parser) -> None:
         help = "Skips ALL the tests. (Added for pipeline use).")
 
 # Based on: https://docs.pytest.org/en/6.2.x/example/nonpython.html
-def pytest_collect_file(parent: Collector, path: LocalPath) -> File:
-    if path.ext in [".yml", ".yaml"] and path.basename.startswith("test_"):
-        return yamlfile.YamlFile.from_parent(parent, path=pathlib.Path(path))
+# path is deprecated, using file_path
+# https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest_collect_file
+def pytest_collect_file(parent: Collector, file_path: pathlib.Path) -> File:
+    if file_path.suffix in [".yml", ".yaml"] and file_path.name.startswith("test_"):
+        return yamlfile.YamlFile.from_parent(parent, path=file_path)

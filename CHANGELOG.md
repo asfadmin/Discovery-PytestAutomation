@@ -28,6 +28,16 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ------
 
+## [v3.0.0](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v2.0.1...v3.0.0)
+
+### Breaking Change:
+- Upgraded to pytest-8. **Plugin will now only work with pytest>=8.0.0**.
+
+### Fixed:
+- Completely removes legacy dependency from requirements.txt (`py` package) per cve advisory https://github.com/advisories/GHSA-w596-4wvx-j9j6
+
+------
+
 ## [v2.0.1](https://github.com/asfadmin/Discovery-PytestAutomation/compare/v2.0.0...v2.0.1)
 
 ### Fixed:
