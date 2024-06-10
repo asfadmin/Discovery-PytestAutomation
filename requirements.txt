@@ -1,6 +1,6 @@
 exceptiongroup==1.2.1
 iniconfig==2.0.0
-packaging==24.0
+packaging==24.1
 pluggy==1.5.0
 pytest==8.1.1
 PyYAML==6.0.1
